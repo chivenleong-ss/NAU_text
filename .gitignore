@@ -1,0 +1,31 @@
+# 忽略所有 Markdown 文件
+*.md
+*.markdown
+
+# 忽略所有 Excel 文件
+*.xls
+*.xlsx
+*.xlsm
+*.xlsb
+
+# 忽略所有 Word 文件
+*.doc
+*.docx
+
+# 忽略所有 PDF 文件
+*.pdf
+
+# 忽略所有 JPG/JPEG 图片
+*.jpg
+*.jpeg
+*.jpe
+
+# 如果还想忽略其他常见图片格式（可选）
+*.png
+*.gif
+*.bmp
+*.tiff
+
+# 忽略 Python 编译缓存
+__pycache__/
+*.pyc
