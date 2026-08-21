@@ -198,6 +198,30 @@ def model():
         return jsonify({"error": f"结构化模型生成失败：{exc}"}), 500
 
 
+@app.get("/api/settlement-demo/model-chain")
+def model_chain():
+    try:
+        return jsonify(_state().get("model_chain", {}))
+    except Exception as exc:
+        return jsonify({"error": f"模型链生成失败：{exc}"}), 500
+
+
+@app.get("/api/settlement-demo/nine-grid")
+def nine_grid():
+    try:
+        return jsonify(_state().get("nine_grid", {}))
+    except Exception as exc:
+        return jsonify({"error": f"九宫格判定生成失败：{exc}"}), 500
+
+
+@app.get("/api/settlement-demo/cross-model-hints")
+def cross_model_hints():
+    try:
+        return jsonify(_state().get("cross_model_hints", {}))
+    except Exception as exc:
+        return jsonify({"error": f"跨模型证据链生成失败：{exc}"}), 500
+
+
 @app.get("/api/settlement-demo/agents")
 def agents():
     try:
@@ -213,6 +237,9 @@ def model_catalog():
         return jsonify({
             "audit_model_catalog": result.get("audit_model_catalog", {}),
             "false_settlement_training": result.get("false_settlement_training", {}),
+            "model_chain": result.get("model_chain", {}),
+            "nine_grid": result.get("nine_grid", {}),
+            "cross_model_hints": result.get("cross_model_hints", {}),
         })
     except Exception as exc:
         return jsonify({"error": f"模型库生成失败：{exc}"}), 500

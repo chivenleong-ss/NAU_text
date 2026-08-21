@@ -29,3 +29,7 @@
 # 忽略 Python 编译缓存
 __pycache__/
 *.pyc
+*.txt
+*.zip
+*.csv
+

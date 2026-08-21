@@ -129,7 +129,7 @@ class SettlementAuditEngineTests(unittest.TestCase):
         self.assertEqual(model["summary"]["issue_count"], 11)
         self.assertEqual(model["summary"]["historical_pattern_count"], 5)
         self.assertEqual(model["summary"]["historical_case_count"], 6)
-        self.assertEqual(model["summary"]["audit_model_count"], 10)
+        self.assertEqual(model["summary"]["audit_model_count"], 13)
         self.assertEqual(model["project"]["name"], "南方产业园二期项目")
         self.assertGreaterEqual(len(model["cost_components"]["claims"]), 2)
         self.assertEqual(
@@ -140,10 +140,10 @@ class SettlementAuditEngineTests(unittest.TestCase):
     def test_model_catalog_and_training_cover_lifecycle_business_ends(self):
         catalog = self.result["audit_model_catalog"]
         training = self.result["false_settlement_training"]
-        self.assertEqual(catalog["summary"]["model_count"], 10)
-        self.assertEqual(catalog["summary"]["phase_counts"]["事前"], 2)
-        self.assertEqual(catalog["summary"]["phase_counts"]["事中"], 3)
-        self.assertEqual(catalog["summary"]["phase_counts"]["事后"], 5)
+        self.assertEqual(catalog["summary"]["model_count"], 13)
+        self.assertEqual(catalog["summary"]["phase_counts"]["事前"], 1)
+        self.assertEqual(catalog["summary"]["phase_counts"]["事中"], 5)
+        self.assertEqual(catalog["summary"]["phase_counts"]["事后"], 7)
         self.assertGreaterEqual(catalog["summary"]["business_end_count"], 7)
         self.assertGreaterEqual(catalog["summary"]["active_model_count"], 6)
         self.assertEqual(training["sample_count"], 6)
@@ -157,7 +157,7 @@ class SettlementAuditEngineTests(unittest.TestCase):
             response = client.get("/api/settlement-demo/model-catalog")
             self.assertEqual(response.status_code, 200)
             payload = response.get_json()
-        self.assertEqual(payload["audit_model_catalog"]["summary"]["model_count"], 10)
+        self.assertEqual(payload["audit_model_catalog"]["summary"]["model_count"], 13)
         self.assertEqual(payload["false_settlement_training"]["sample_count"], 6)
 
     def test_export_endpoint_returns_audit_snapshot(self):
@@ -294,6 +294,33 @@ class SettlementAuditEngineTests(unittest.TestCase):
                 self.assertIn("generic-price-Z001", ids)
             finally:
                 client.post("/api/settlement-demo/reset")
+    def test_cross_model_hints_build_nine_management_attribution_chains(self):
+        hints = self.result["cross_model_hints"]
+        self.assertEqual(hints["total_chains"], 9)
+        self.assertEqual(hints["sections"][0]["section"], "商务结算合规")
+        self.assertEqual(hints["sections"][0]["count"], 4)
+        self.assertEqual(hints["sections"][1]["section"], "公司治理与战略风控")
+        self.assertEqual(hints["sections"][1]["count"], 5)
+        self.assertEqual(
+            [c["chain_id"] for c in hints["chains"]],
+            ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G9"],
+        )
+        for chain in hints["chains"]:
+            self.assertIn("path", chain)
+            self.assertIn("description", chain)
+            self.assertTrue(
+                {"qualitative", "quantitative", "management"}.issubset(
+                    chain["conclusion"].keys()
+                )
+            )
+
+    def test_model_chain_step6_refers_nine_chains(self):
+        step6 = next(s for s in self.result["model_chain"]["steps"] if s["step"] == 6)
+        self.assertEqual(step6["name"], "九大管理归因与战略定论链串联")
+        self.assertEqual(
+            step6["models"],
+            ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G9"],
+        )
 
 
 if __name__ == "__main__":

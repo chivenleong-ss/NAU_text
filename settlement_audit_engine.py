@@ -454,139 +454,529 @@ def train_false_settlement_model(data: dict[str, Any], issues: list[dict[str, An
 
 
 def _default_audit_models() -> list[dict[str, Any]]:
+    """Return the 11 core business models plus pre-filter (方案 §2)."""
     return [
-        {
-            "id": "M-PRE-001",
-            "phase": "事前",
-            "model_type": "预警类",
-            "business_end": "招采与合同端",
-            "name": "招标清单与合同清单差异预警",
-            "categories": ["工程量"],
-            "input_documents": ["招标文件", "合同"],
-            "key_fields": ["项目编码", "清单子目", "招标工程量", "合同工程量", "合同单价"],
-            "rule": "合同工程量或单价较招标清单偏离超过阈值时预警",
-            "output": "合同签约前清单差异清单",
-            "agents": ["资料解析智能体", "结构化建模智能体", "造价专家", "商务专家"],
-        },
-        {
-            "id": "M-PRE-002",
-            "phase": "事前",
-            "model_type": "预警类",
-            "business_end": "合同法务端",
-            "name": "合同计价与调价条款风险预警",
-            "categories": ["单价", "取费"],
-            "input_documents": ["合同", "专用条款", "招标文件"],
-            "key_fields": ["计价方式", "调价条件", "取费费率", "审批权限"],
-            "rule": "固定价、调价、取费和审批条款缺失或冲突时预警",
-            "output": "合同条款风险提示",
-            "agents": ["制度知识库机器人", "商务专家", "法务专家"],
-        },
-        {
-            "id": "M-IN-001",
-            "phase": "事中",
-            "model_type": "预警类",
-            "business_end": "变更签证端",
-            "name": "变更签证审批链闭合预警",
-            "categories": ["变更签证", "索赔"],
-            "input_documents": ["变更签证", "索赔资料", "合同"],
-            "key_fields": ["变更编号", "审批状态", "审批岗位", "金额", "关联清单"],
-            "rule": "未完成授权审批链的变更、索赔进入支付或结算时预警",
-            "output": "审批链缺口与冻结支付建议",
-            "agents": ["规则比对智能体", "商务专家", "法务专家"],
-        },
-        {
-            "id": "M-IN-002",
-            "phase": "事中",
-            "model_type": "预警类",
-            "business_end": "成本支付端",
-            "name": "支付进度与实际完成量偏差预警",
-            "categories": ["实际完成量"],
-            "input_documents": ["竣工验收", "支付台账", "产值报表"],
-            "key_fields": ["已支付金额", "实际认证金额", "完成量", "验收节点"],
-            "rule": "已支付金额高于实际完成量对应金额时预警",
-            "output": "支付超前风险清单",
-            "agents": ["财务专家", "履约专家", "规则比对智能体"],
-        },
-        {
-            "id": "M-IN-003",
-            "phase": "事中",
-            "model_type": "专项核查类",
-            "business_end": "供应链与现场端",
-            "name": "材料损耗与机械台班跑冒滴漏核查",
-            "categories": ["跑冒滴漏"],
-            "input_documents": ["材料台账", "机械台班", "施工日志", "目标成本"],
-            "key_fields": ["理论消耗量", "领用量", "退库量", "台班小时", "日志匹配"],
-            "rule": "材料损耗率或台班未匹配记录超过专项阈值时标记",
-            "output": "材料超耗、台班缺证与责任追踪",
-            "agents": ["招采供应链专家", "履约专家", "财务专家"],
-        },
-        {
-            "id": "M-POST-001",
-            "phase": "事后",
-            "model_type": "问题类",
-            "business_end": "结算审核端",
-            "name": "工程量三表比对问题模型",
-            "categories": ["工程量", "实际完成量"],
-            "input_documents": ["合同", "变更签证", "竣工验收", "结算书"],
-            "key_fields": ["合同工程量", "实际完成工程量", "结算工程量", "变更工程量"],
-            "rule": "结算工程量 vs 合同工程量 vs 实际完成工程量偏差超过阈值",
-            "output": "工程量核减疑点",
-            "agents": ["造价专家", "履约专家", "主审驾驶舱"],
-        },
-        {
-            "id": "M-POST-002",
-            "phase": "事后",
-            "model_type": "问题类",
-            "business_end": "结算审核端",
-            "name": "单价合同与市场参考偏差模型",
-            "categories": ["单价", "取费"],
-            "input_documents": ["合同", "结算书", "市场价资料", "取费表"],
-            "key_fields": ["合同单价", "结算单价", "市场参考价", "取费费率"],
-            "rule": "结算单价偏离合同超过 10% 或取费费率高于批准值",
-            "output": "单价及取费疑点",
-            "agents": ["造价专家", "招采供应链专家", "财务专家"],
-        },
-        {
-            "id": "M-POST-003",
-            "phase": "事后",
-            "model_type": "问题类",
-            "business_end": "商务结算端",
-            "name": "合同价、变更、索赔、奖罚金额归集模型",
-            "categories": ["索赔", "奖罚款", "变更签证"],
-            "input_documents": ["合同", "变更签证", "索赔资料", "奖罚资料", "结算书"],
-            "key_fields": ["合同总价", "批准变更", "索赔批准金额", "罚款扣减", "结算金额"],
-            "rule": "未批准索赔、奖励或应扣未扣罚款进入结算时标记",
-            "output": "金额归集差异与应核减金额",
-            "agents": ["商务专家", "财务专家", "法务专家"],
-        },
-        {
-            "id": "M-POST-004",
-            "phase": "事后",
-            "model_type": "识别类",
-            "business_end": "反舞弊与审计端",
-            "name": "历史虚假结算特征识别模型",
-            "categories": ["工程量", "实际完成量", "索赔", "变更签证", "单价", "取费"],
-            "input_documents": ["历史案例库", "结算书", "合同", "变更签证", "竣工验收"],
-            "key_fields": ["重复计费", "虚列子目", "不合理索赔", "未完审批", "费率漂移"],
-            "rule": "历史虚假结算特征累计评分达到阈值时输出高风险",
-            "output": "虚假结算风险评分与命中特征",
-            "agents": ["虚假结算识别智能体", "主审驾驶舱", "制度知识库机器人"],
-        },
-        {
-            "id": "M-POST-005",
-            "phase": "事后",
-            "model_type": "整改类",
-            "business_end": "整改闭环端",
-            "name": "审计问题整改验证销号模型",
-            "categories": ["整改"],
-            "input_documents": ["审计报告", "整改说明", "核减确认单", "验证记录"],
-            "key_fields": ["问题编号", "责任部门", "整改状态", "核减金额", "验证证据"],
-            "rule": "主审确认问题后生成整改任务并跟踪验证状态",
-            "output": "整改任务台账与销号记录",
-            "agents": ["主审驾驶舱", "制度知识库机器人"],
-        },
+        # ── 前置过滤器（模型0）─────────────────────────────────────────
+        {"id": "M-PRE-FILTER", "phase": "事前", "model_type": "过滤类",
+         "business_end": "全端",
+         "name": "前置过滤器：工程主体清洗与状态交叉校验模型",
+         "categories": ["数据清洗"],
+         "input_documents": ["项目统计表", "建造合同表"],
+         "key_fields": ["project_no", "status"],
+         "rule": "自动剔除ZZ前缀非施工主体、交叉比对财务与商务项目状态",
+         "output": "纯净施工项目基准集", "agents": ["制度知识库机器人"]},
+        # ── 维度一：对上业主结算与确权（M1.1–M1.4）─────────────────────────
+        {"id": "M1.1", "phase": "事中", "model_type": "识别类",
+         "business_end": "对上业主结算与确权端",
+         "name": "外报量确权率偏离检测模型",
+         "categories": ["确权", "产值"],
+         "input_documents": ["结算书", "验收资料", "施工日志"],
+         "key_fields": ["确权率", "完成产值", "确权产值"],
+         "rule": "确权率<95%判定滞后，>110%且部位未完工判定超前确权",
+         "output": "确权偏离判定与应确未确资金缺口",
+         "agents": ["商务专家", "造价专家"]},
+        {"id": "M1.2", "phase": "事后", "model_type": "问题类",
+         "business_end": "对上业主结算与确权端",
+         "name": "久竣未结超时锁定模型",
+         "categories": ["久竣未结"],
+         "input_documents": ["合同", "竣工验收资料", "收款凭证"],
+         "key_fields": ["完工日期", "验收日期", "结算日期", "合同额", "已收款"],
+         "rule": "完工超90天未验或验收超180天未结，锁定项目并计算资金占压损失",
+         "output": "久竣未结锁定清单与资金占压利息损失",
+         "agents": ["财务专家", "商务专家"]},
+        {"id": "M1.3", "phase": "事中", "model_type": "预警类",
+         "business_end": "对上业主结算与确权端",
+         "name": "变更签证索赔滞后模型",
+         "categories": ["变更签证", "索赔"],
+         "input_documents": ["变更签证台账", "索赔资料"],
+         "key_fields": ["变更日期", "审批日期", "索赔日期"],
+         "rule": "变更超14天未确权或索赔超28天未书面提出判定滞后",
+         "output": "变更签证滞后清单与索赔权丧失损失测算",
+         "agents": ["商务专家", "法务专家"]},
+        {"id": "M1.4", "phase": "事后", "model_type": "问题类",
+         "business_end": "反舞弊与审计端",
+         "name": "生效判决收入冲减模型",
+         "categories": ["诉讼", "收入"],
+         "input_documents": ["判决书", "财务账套"],
+         "key_fields": ["判决金额", "账面收入"],
+         "rule": "账面收入>法院判决金额时判定财务信息失真",
+         "output": "强制红字冲销凭证与瞒报通报",
+         "agents": ["法务专家", "财务专家"]},
+        # ── 维度二：对下分包分供结算（M2.1–M2.5）─────────────────────────
+        {"id": "M2.1", "phase": "事后", "model_type": "问题类",
+         "business_end": "对下分包结算端",
+         "name": "分包超结超付与结算超合同5%审批穿透模型",
+         "categories": ["分包结算", "审批合规"],
+         "input_documents": ["合同", "结算书", "红头纪要"],
+         "key_fields": ["合同额", "审定额", "超额率", "三重一大批复"],
+         "rule": "超额>5%且缺三重一大批复判定重大违规",
+         "output": "违规越权结算判定与支付冻结指令",
+         "agents": ["商务专家", "法务专家"]},
+        {"id": "M2.2", "phase": "事中", "model_type": "识别类",
+         "business_end": "反舞弊与审计端",
+         "name": "合同明令禁止签证项与清单外虚假结算穿透模型",
+         "categories": ["虚假结算", "签证"],
+         "input_documents": ["合同", "结算书", "业主清单"],
+         "key_fields": ["禁止签证标志", "结算项", "清单外项"],
+         "rule": "包干合同出现签证或清单外无对应子目判定虚假结算",
+         "output": "违规签证与虚假列项清单及应扣减金额",
+         "agents": ["虚假结算识别智能体", "造价专家"]},
+        {"id": "M2.3", "phase": "事后", "model_type": "问题类",
+         "business_end": "对下分包结算端",
+         "name": "材料超耗未扣硬算模型",
+         "categories": ["跑冒滴漏"],
+         "input_documents": ["材料台账", "结算书", "合同"],
+         "key_fields": ["预算量", "实际消耗", "超耗率", "应扣金额"],
+         "rule": "钢筋超耗>2%或混凝土超耗>0%时按150%单价硬算应扣金额",
+         "output": "超耗扣减差额与强制补扣指令",
+         "agents": ["造价专家", "物资专家"]},
+        {"id": "M2.4", "phase": "事中", "model_type": "预警类",
+         "business_end": "招采供应链端",
+         "name": "未签合同先进场施工时序倒置检测模型",
+         "categories": ["时序倒置"],
+         "input_documents": ["合同", "施工日志"],
+         "key_fields": ["合同签订日", "施工日志首日"],
+         "rule": "合同签订日晚于施工日志首日判定时序倒置",
+         "output": "违规进场判定与责任锁定",
+         "agents": ["招采供应链专家", "履约专家"]},
+        {"id": "M2.5", "phase": "事后", "model_type": "问题类",
+         "business_end": "对下分包结算端",
+         "name": "分包甩项代工与负结算未结清收模型",
+         "categories": ["代工", "负结算"],
+         "input_documents": ["代工台账", "结算书"],
+         "key_fields": ["代工金额", "审定额"],
+         "rule": "代工费用未100%扣减或审定额<0时判定债权风险",
+         "output": "代工漏扣补扣与负结算全局冻结指令",
+         "agents": ["商务专家", "财务专家"]},
+        # ── 维度三：业财法工全域穿透（M3.1–M3.3）─────────────────────────
+        {"id": "M3.1", "phase": "事后", "model_type": "问题类",
+         "business_end": "财务审计端",
+         "name": "存货未报耗虚增利润模型",
+         "categories": ["存货", "利润"],
+         "input_documents": ["SAP总账", "竣工验收资料"],
+         "key_fields": ["存货余额", "验收日期"],
+         "rule": "竣工超30天原材料余额>0判定虚增利润",
+         "output": "虚增利润金额与强制调整通知",
+         "agents": ["财务专家", "制度知识库机器人"]},
+        {"id": "M3.2", "phase": "事后", "model_type": "识别类",
+         "business_end": "财务审计端",
+         "name": "隐性贴息利息侵蚀与全口径真实效益还原模型",
+         "categories": ["贴息", "真实效益"],
+         "input_documents": ["财务总账", "利润表", "贴息台账"],
+         "key_fields": ["账面利润", "贴息", "逾期利息", "借款利息"],
+         "rule": "账面盈利但真实利润<0判定虚盈实亏",
+         "output": "全口径真实效益还原报告与责任成本考核调整",
+         "agents": ["财务专家", "主审驾驶舱"]},
+        {"id": "M3.3", "phase": "事中", "model_type": "预警类",
+         "business_end": "法务风控端",
+         "name": "招采付款条件倒挂与拖欠高压线强制止损模型",
+         "categories": ["付款倒挂", "拖欠"],
+         "input_documents": ["招采合同", "业主付款记录"],
+         "key_fields": ["对下比例", "对上比例", "拖欠比", "拖欠月数"],
+         "rule": "对下>对上判定倒挂；拖欠>30%且>12月触发强制止损",
+         "output": "招采倒挂预警与强制停工熔断指令",
+         "agents": ["法务专家", "主审驾驶舱"]},
     ]
 
+def run_core_models(data: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
+    """Execute all 11 core business models + pre-filter on project data."""
+    import datetime
+    project = data.get("project", {}) or {}
+    financials = project.get("financials", {}) or {}
+    results: dict[str, list[dict[str, Any]]] = {m["id"]: [] for m in _default_audit_models()}
+
+    def _parse_date(d: Any) -> datetime.date | None:
+        if not d: return None
+        try:
+            if isinstance(d, datetime.date): return d
+            return datetime.datetime.strptime(str(d)[:10], "%Y-%m-%d").date()
+        except: return None
+    today = datetime.date.today()
+
+    # Pre-filter
+    p_id, p_st = str(project.get("id","")), str(project.get("status",""))
+    if p_id.startswith("ZZ") or p_st in {"关闭","已注销","冻结"}:
+        results["M-PRE-FILTER"].append({"hit":True,"title":"非施工主体或状态异常","amount":0,
+            "detail":f"项目{p_id}含ZZ前缀或状态={p_st},已过滤","risk":"高风险"})
+
+    # M1.1
+    compl = _number(project.get("completed_output"))
+    conf = _number(project.get("confirmed_output"))
+    if compl>0 and conf>0:
+        pct = conf/compl
+        if pct<0.95:
+            gap=_money(compl-conf)
+            results["M1.1"].append({"hit":True,"title":"确权率偏低","amount":gap,
+                "detail":f"确权率{pct:.1%}<95%,应确未确缺口约{gap:,}元","risk":"中风险"})
+        elif pct>1.10:
+            results["M1.1"].append({"hit":True,"title":"超前确权","amount":_money(conf-compl),
+                "detail":f"确权率{pct:.1%}>110%,可能存在超前确权","risk":"中风险"})
+
+    # M1.2
+    finish=_parse_date(project.get("actual_finish_date"))
+    accept=_parse_date(project.get("acceptance_date"))
+    settle=_parse_date(project.get("settlement_date"))
+    if finish and (not accept or (accept-finish).days>90):
+        contract_amt=_number(financials.get("contract_total"))
+        pd=(today-finish).days if not accept else (accept-finish).days
+        loss=_money(contract_amt*0.05*min(pd,365)/365) if pd>90 else 0
+        results["M1.2"].append({"hit":True,"title":"完工超90天未验收","amount":loss or _money(contract_amt*0.05),
+            "detail":f"完工{finish},验收{accept or '无'},已逾{pd}天,资金占压损失约{loss:,}元","risk":"高风险"})
+    if accept and (not settle or (today-accept).days>180):
+        c2=_number(financials.get("contract_total"))
+        coll=_number(project.get("cumulative_collection"))
+        results["M1.2"].append({"hit":True,"title":"验收超180天未结算","amount":_money(c2-coll),
+            "detail":f"验收{accept}已逾{(today-accept).days}天,未收款余额{_money(c2-coll):,}元","risk":"高风险"})
+
+    # M1.3
+    for var in project.get("variations",[]):
+        vd=_parse_date(var.get("occur_date"))
+        if vd and (today-vd).days>14 and var.get("status")!="APPROVED":
+            results["M1.3"].append({"hit":True,"title":f"变更{var.get('id','')}确权滞后",
+                "amount":_money(_number(var.get("amount"))),
+                "detail":f"变更{var.get('id','')}已发生{(today-vd).days}天,审批状态={var.get('status')}","risk":"中风险"})
+    if not results["M1.3"]:
+        for cl in project.get("cost_components",{}).get("claims",[]):
+            if cl.get("status") in {"待审批","部分批准"} and _number(cl.get("requested_amount"))>0:
+                results["M1.3"].append({"hit":True,"title":f"索赔{cl.get('id','')}审批滞后",
+                    "amount":_money(_number(cl.get("requested_amount"))),
+                    "detail":f"索赔{cl.get('id','')}申报{_number(cl.get('requested_amount')):,.0f}元,状态={cl.get('status')}","risk":"高风险"})
+
+    # M1.4
+    judgment=_number(project.get("court_judgment_amount"))
+    book_rev=_number(project.get("sap_cumulative_revenue"))
+    if judgment>0 and book_rev>judgment:
+        results["M1.4"].append({"hit":True,"title":"判决收入未冲减","amount":_money(book_rev-judgment),
+            "detail":f"判决{judgment:,.0f}元,账面{book_rev:,.0f}元,虚增{book_rev-judgment:,.0f}元","risk":"高风险"})
+
+    # M2.1
+    sub_ct=_number(project.get("subcontract_settlement",{}).get("contract_amount"))
+    sub_au=_number(project.get("subcontract_settlement",{}).get("audit_amount"))
+    if sub_ct>0 and sub_au>0 and sub_au>sub_ct*1.05:
+        triple=(project.get("approval_minutes",{}) or {}).get("is_triple_importance_large",False)
+        results["M2.1"].append({"hit":True,"title":"结算超合同5%且缺三重一大批复",
+            "amount":_money(sub_au-sub_ct),
+            "detail":f"分包结算{sub_au:,.0f}vs合同{sub_ct:,.0f},超额{sub_au/sub_ct-1:.1%},三重一大={triple}","risk":"高风险"})
+
+    # M2.2
+    if project.get("no_variation_allowed",False):
+        for ln in data.get("line_items",[]):
+            if _number(ln.get("change",{}).get("amount"))>0:
+                results["M2.2"].append({"hit":True,"title":"包干合同出现签证项",
+                    "amount":_money(_number(ln.get("change",{}).get("amount"))),
+                    "detail":f"包干合同(禁止签证),清单{ln.get('item_code','')}存在变更","risk":"高风险"})
+
+    # M2.3
+    for mat in project.get("materials",[]):
+        bq=_number(mat.get("budget_quantity")); aq=_number(mat.get("actual_quantity"))
+        pr=_number(mat.get("purchase_unit_price")); nm=mat.get("name","")
+        if bq>0 and aq>bq:
+            rate=(aq-bq)/bq; lim=0.02 if "钢" in nm else 0.00
+            if rate>lim:
+                deduct=_money((aq-bq)*pr*1.5)
+                results["M2.3"].append({"hit":True,"title":f"{nm}超耗未扣","amount":deduct,
+                    "detail":f"{nm}预算{bq:,.0f}实际{aq:,.0f}超耗{rate:.1%},按150%应扣{deduct:,}元","risk":"中风险"})
+# M2.4
+    sign=_parse_date(project.get("sign_date"))
+    diary=_parse_date(project.get("diary_first_date"))
+    if sign and diary and diary<sign:
+        results["M2.4"].append({"hit":True,"title":"未签合同先进场","amount":0,
+            "detail":f"合同签订日{sign}晚于施工日志首日{diary},时序倒置{(sign-diary).days}天","risk":"中风险"})
+
+    # M2.5
+    for lb in project.get("third_party_labors",[]):
+        la=_number(lb.get("amount")); ded=lb.get("is_deducted_in_settlement",False)
+        if la>0 and not ded:
+            results["M2.5"].append({"hit":True,"title":f"代工{lb.get('name','')}未扣减","amount":_money(la),
+                "detail":f"{lb.get('name','')}代工{la:,.0f}元,结算未扣减","risk":"高风险"})
+    sub_au2=_number(project.get("subcontract_settlement",{}).get("audit_amount"))
+    if sub_au2<0:
+        results["M2.5"].append({"hit":True,"title":"负结算未清收","amount":_money(abs(sub_au2)),
+            "detail":f"分包审定{sub_au2:,.0f}元,债权风险","risk":"高风险"})
+
+    # M3.1
+    invb=_number(project.get("sap_inventory_balance"))
+    if accept and invb>0 and (today-accept).days>30:
+        results["M3.1"].append({"hit":True,"title":"竣工后存货未报耗","amount":_money(invb),
+            "detail":f"验收已{(today-accept).days}天,存货余额{invb:,.0f}元,虚增利润","risk":"高风险"})
+
+    # M3.2
+    bp=_number(project.get("book_profit"))
+    disc=_number(project.get("supply_chain_discount_fee"))
+    oi=_number(project.get("steel_overdue_interest"))
+    li=_number(project.get("internal_loan_interest"))
+    tp=bp-disc-oi-li
+    if bp>0 and tp<0:
+        results["M3.2"].append({"hit":True,"title":"虚盈实亏","amount":_money(abs(tp)),
+            "detail":f"账面{bp:,.0f},扣贴息{disc:,.0f}+逾期{oi:,.0f}+借款{li:,.0f},真实{tp:,.0f}","risk":"高风险"})
+    elif disc>0 or oi>0 or li>0:
+        ero=_money(disc+oi+li)
+        results["M3.2"].append({"hit":True,"title":"隐性贴息侵蚀效益","amount":ero,
+            "detail":f"账面{bp:,.0f},隐性侵蚀{ero:,}元(贴息{disc:,.0f}+逾期{oi:,.0f}+借款{li:,.0f})","risk":"中风险"})
+
+    # M3.3
+    up=_number(project.get("owner_progress_pay_ratio"))
+    dn=_number(project.get("subcontract_pay_ratio"))
+    dr=_number(project.get("owner_default_ratio"))
+    dm=int(_number(project.get("owner_default_months")))
+    if dn>up:
+        results["M3.3"].append({"hit":True,"title":"付款条件倒挂","amount":0,
+            "detail":f"对下{dn:.0%}>对上{up:.0%},资金链紧张","risk":"中风险"})
+    if dr>0.30 and dm>12:
+        results["M3.3"].append({"hit":True,"title":"业主拖欠超高压线",
+            "amount":_money(dr*_number(financials.get("contract_total"))),
+            "detail":f"业主拖欠{dr:.0%}已{dm}月,触发强制止损","risk":"高风险"})
+
+    return results
+def build_model_chain(core_results: dict[str, list[dict[str, Any]]],
+                      issues: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    """Build the 8-step execution pipeline (模型链) grouping models by execution order.
+    方案 §3.1 '双轨为经、穿透为纬'三维多模型关联图谱."""
+    issues = issues or []
+    chain_steps = [
+        {"step": 0, "name": "前置过滤与数据清洗",
+         "models": ["M-PRE-FILTER"], "model_names": ["前置过滤器"],
+         "description": "剔除ZZ实体，修复项目状态漂移，输出纯净施工项目基准"},
+        {"step": 1, "name": "准入合规性扫描",
+         "models": ["M2.4", "M2.2"],
+         "model_names": ["未签合同先进场检测", "禁止签证与清单外虚假结算穿透"],
+         "description": "扫描未签先进场、禁止签证项与清单外虚假列项"},
+        {"step": 2, "name": "材料超耗与代工漏扣硬算",
+         "models": ["M2.3", "M2.5"],
+         "model_names": ["材料超耗未扣硬算", "分包代工负结算清收"],
+         "description": "确定性硬算材料超耗150%倍扣减、分包甩项代工漏扣与负结算"},
+        {"step": 3, "name": "结算合规性审查",
+         "models": ["M2.1"],
+         "model_names": ["结算超5%审批穿透"],
+         "description": "审查最终结算合规性，超额5%三重一大穿透"},
+        {"step": 4, "name": "对上确权与久竣未结审查",
+         "models": ["M1.1", "M1.2", "M1.3"],
+         "model_names": ["确权率检测", "久竣未结锁定", "变更签证滞后"],
+         "description": "确权率<95%、久竣未结超时、变更签证滞后审查"},
+        {"step": 5, "name": "业财法工穿透审计",
+         "models": ["M3.1", "M3.2", "M1.4"],
+         "model_names": ["存货虚增利润", "隐性贴息还原", "判决收入冲减"],
+         "description": "存货账实对账、隐性贴息侵蚀、生效判决收入冲销"},
+        {"step": 6, "name": "九大管理归因与战略定论链串联",
+         "models": ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G9"],
+         "model_names": ["先干后谈责任错配", "结算滞后虚盈实亏", "证据链断点阻断",
+                         "层层转包价格失控", "盲目垫资止损击穿", "三重一大审批失守",
+                         "诉讼判决未冲销", "贴息反噬效益侵蚀", "时空穿越人证分离"],
+         "description": "将11个微观模型升维聚合为九大高管视角管理归因与战略审计定论链（商务结算合规4链+公司治理与战略风控5链），输出三段式公文定论"},
+        {"step": 7, "name": "合规监管映射与处置建议",
+         "models": [], "model_names": [],
+         "description": "自动匹配违规行为分类与一/二/三级处置建议"},
+        {"step": 8, "name": "主审驾驶舱输出",
+         "models": [], "model_names": [],
+         "description": "自动生成结算审计报告+整改销号工单包"},
+    ]
+    total_hits = 0
+    for step in chain_steps:
+        hits = []
+        hit_amount = 0
+        for mid in step["models"]:
+            findings = core_results.get(mid, [])
+            for f in findings:
+                hits.append(f)
+                hit_amount += _money(_number(f.get("amount")))
+        step["hit_count"] = len(hits)
+        step["hit_amount"] = hit_amount
+        step["hits"] = hits[:5]
+        total_hits += len(hits)
+    return {
+        "steps": chain_steps,
+        "total_hits": total_hits,
+        "pipeline_status": "正常流转" if total_hits > 0 else "无命中",
+    }
+def build_nine_grid(core_results: dict[str, list[dict[str, Any]]],
+                    data: dict[str, Any]) -> dict[str, Any]:
+    """构建九宫格（责任/风险/处置等级判定）. 方案 §3.5 商务结算"风险-效益"九宫格离散决策矩阵."""
+    project = data.get("project", {}) or {}
+    financials = project.get("financials", {}) or {}
+
+    # 结算风险指数 R
+    risk_weights = {"M2.1":3.0,"M2.5":2.5,"M1.4":2.5,"M2.2":2.0,"M1.2":2.0,
+                    "M3.1":2.0,"M1.1":1.5,"M2.3":1.5,"M2.4":1.0,"M1.3":1.0,"M3.2":1.0,"M3.3":1.0}
+    hit_risk = sum(risk_weights.get(mid,1.0) for mid, fs in core_results.items() if fs)
+    hit_count = sum(1 for fs in core_results.values() if fs)
+    r_score = round(min(max(1.0, hit_risk/hit_count if hit_count>0 else 1.0), 3.0), 1)
+
+    # 真实效益指数 E
+    contract = _number(financials.get("contract_total"))
+    certified = _number(financials.get("actual_certified_total"))
+    e_raw = certified/contract if contract>0 else 0.5
+    e_score = round(min(max(1.0, e_raw*3), 3.0), 1)
+    if any(h.get("title")=="虚盈实亏" for h in core_results.get("M3.2",[])):
+        e_score = max(1.0, e_score-0.5)
+
+    r_idx = min(int(r_score-1), 2)
+    e_idx = min(int(3-e_score), 2)  # high E = low row (0=best)
+    quadrant = f"({r_idx+1},{e_idx+1})"
+    zones = {
+        (0,0):("双优区","优质项目","保持"), (0,1):("观察区","效益好但风险上升","关注"),
+        (0,2):("重点观察区","效益好但高风险","严控"),
+        (1,0):("稳定区","风险中等+效益好","维持"), (1,1):("观察区","风险中等+效益中等","核查"),
+        (1,2):("危险区","风险高+效益中等","限期整改"),
+        (2,0):("重点观察区","风险低但效益差","帮扶"), (2,1):("观察区","确权滞后+微利微亏","限期3月确权"),
+        (2,2):("危险区","高风险+低效益","立即止损追责"),
+    }
+    zone_info = zones.get((r_idx, e_idx), ("未知","",""))
+
+    risk_details = []
+    benefit_details = []
+    for mid, findings in core_results.items():
+        if not findings: continue
+        model = next((m for m in _default_audit_models() if m["id"]==mid), None)
+        amt = sum(_number(f.get("amount")) for f in findings)
+        if any(f.get("risk")=="高风险" for f in findings):
+            risk_details.append({"model_id":mid,"name":model["name"] if model else mid,
+                                 "amount":_money(amt),"risk":"高风险"})
+        if mid in {"M3.2","M3.1","M1.4"}:
+            benefit_details.append({"model_id":mid,"name":model["name"] if model else mid,
+                                    "amount":_money(abs(amt)),"impact":"效益扣减"})
+    color = "red" if r_idx>=2 else "orange" if r_idx>=1 else "yellow" if e_idx>=1 else "green"
+    return {
+        "r_score":r_score, "e_score":e_score, "quadrant":quadrant,
+        "zone":zone_info[0], "diagnosis":zone_info[1], "action":zone_info[2],
+        "risk_details":risk_details, "benefit_details":benefit_details,
+        "summary":{"risk_level":"高风险" if r_score>=2.5 else "中风险" if r_score>=1.5 else "低风险",
+                   "benefit_level":"高效益" if e_score>=2.5 else "中等效益" if e_score>=1.5 else "低效益",
+                   "zone_color":color},
+    }
+
+
+def build_cross_model_hints(core_results: dict[str, list[dict[str, Any]]],
+                            issues: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    """构建九大管理归因与战略审计定论链（G1~G9）及命中聚合.
+    方案 §3.2 九大管理归因与战略审计定论链：彻底摒弃三条关联提示链，
+    将 11 个微观计算模型升维聚合成商务结算合规（4 链）与公司治理与战略风控（5 链）两大阵列."""
+    issues = issues or []
+    chains = [
+        {"chain_id":"G1","section":"商务结算合规",
+         "name":"先干后谈与未定价变更责任错配链",
+         "path":"口头/会议越权指令 → 模型2.4(未签合同先进场) → 模型1.3(变更超14天未办经济确权) → 模型2.2(结算申报清单外项被全额核减)",
+         "description":"现场“必须马上干”与商务“以后审价”两次决定脱节：工程端取即时进度、商务端保留审价空间，现场材料已采购、隐蔽已覆盖，证据灭失、成本混淆入原合同，项目部被迫承担现金垫资与结算让价双重损失。",
+         "models":["M2.4","M1.3","M2.2"],
+         "model_names":["未签合同先进场","变更超14天未办经济确权","清单外项被全额核减"],
+         "conclusion":{
+             "qualitative":"项目违规执行“先干后谈”，存在严重的时序错配与管理责任转嫁；",
+             "quantitative":"未定价变更先行施工2.4个月，导致209万元新增成本混入原合同且缺乏有效图纸和签认证据，结算时被迫折让核减180万元；",
+             "management":"暴露出上级越权下达口头指令而回避经济后果的坏管理，系统依据“一页最低确认机制”将指令发起人锁定为风险第一责任人。"},
+         "severity":"重大","action":"锁定指令发起人为第一责任人并追责"},
+        {"chain_id":"G2","section":"商务结算合规",
+         "name":"结算滞后与虚盈实亏时间亏损链",
+         "path":"模型1.1(外报量确权偏离) → 模型1.2(久竣未结超期515天) → 模型3.1(存货未报耗挂账868万) → 模型3.2(产生贴息利息8424万)",
+         "description":"为冲产值提前确认虚高收入，竣工后资料不齐、签证未闭合拖延结算，形成大额“应收未结”挂账，账面利润被年化资金利息(3.5%~5%)吞噬，形成典型“时间型亏损”。",
+         "models":["M1.1","M1.2","M3.1","M3.2"],
+         "model_names":["外报量确权偏离","久竣未结超期锁定","存货未报耗虚增利润","隐性贴息侵蚀还原"],
+         "conclusion":{
+             "qualitative":"项目表面稳健盈利，实质已陷入流动性枯竭的“虚盈实亏”经营陷阱；",
+             "quantitative":"竣工超期未结导致2.1亿元资金沉淀，产生贴息利息8424万元，叠加868万元原材料未报耗虚增利润，真实效益由账面盈利1200万沦为实质巨亏-3022万元；",
+             "management":"暴露出“以产值为导向”的考核扭曲，必须强制将“资金占用成本与折现率”纳入利润核算，推动结算全面提速。"},
+         "severity":"重大","action":"强制资金占用成本与折现率纳入利润核算"},
+        {"chain_id":"G3","section":"商务结算合规",
+         "name":"证据治理与六大证据链断点阻断链",
+         "path":"六链拓扑扫描(合同链/变更链/签证链/工程量链/费用链/工期链) → 证据计数evidence_count<2 → 模型2.2(禁止签证项违规) → 模型1.4(法院因缺证调减)",
+         "description":"结算争议的本质是“证据贫困”：签证缺监理签字、隐蔽照片无GPS水印、合同审批意见未落入正文，真实施工的事项在法律与结算中无法被采信。",
+         "models":["M2.2","M1.4"],
+         "model_names":["禁止签证项违规","法院因缺证调减"],
+         "conclusion":{
+             "qualitative":"项目过程证据治理严重缺失，核心权利主张缺乏法理证据支撑；",
+             "quantitative":"六大证据链共检出15份签证缺三方签认、3处隐蔽工程照片缺失时空水印，导致590万元变更款在结算中被业主刚性剔除；",
+             "management":"必须将审计关口前移至中期审计，建立“证据质量指数(EQI)”考核与预防性备案机制，确保无证据事项在系统内无法流转。"},
+         "severity":"重大","action":"关口前移中期审计+EQI证据质量考核"},
+        {"chain_id":"G4","section":"商务结算合规",
+         "name":"层层转包与影子分包价格失控链",
+         "path":"模型3.3(招采条件倒挂) → 模型2.1(分包结算超5%缺审批) → 模型2.3(材料超耗150%漏扣) → 模型2.5(第三方代工733万未扣)",
+         "description":"分包准入失真(个人施工队挂靠资质)、合同条款松散、同类工序班组间价差20%~35%随意认价、过程管理责任断裂，利润在多层转包中被彻底稀释。",
+         "models":["M3.3","M2.1","M2.3","M2.5"],
+         "model_names":["招采付款条件倒挂","分包结算超5%缺审批","材料超耗150%漏扣","第三方代工未扣"],
+         "conclusion":{
+             "qualitative":"分包管理存在严重的资质挂靠、随意认价与跑冒滴漏失控；",
+             "quantitative":"人工费单价偏离区域限价25%，第三方代工733万元与材料超耗款未在结算中扣减，导致单项目分包超结超付3160万元；",
+             "management":"暴露出项目经理权力过度集中与分包限价库监管缺位，建立分包商黑名单，并对失职商务人员予以二级经济赔偿追责。"},
+         "severity":"重大","action":"建立分包商黑名单+二级经济赔偿追责"},
+        {"chain_id":"G5","section":"公司治理与战略风控",
+         "name":"盲目垫资与履约惯性击穿强制止损红线链",
+         "path":"模型3.3(招采条件倒挂) → 业主逾期拖欠>30%且>12个月 → 项目持续采购施工 → 产生巨额负现金流",
+         "description":"受“保产值、冲营收”考核驱使，业主已实质违约甚至暴雷仍产生盲目履约惯性，不敢停工止损，持续对下招采垫资，企业沦为高风险业主的融资工具。",
+         "models":["M3.3"],
+         "model_names":["招采倒挂与强制止损"],
+         "conclusion":{
+             "qualitative":"违背审慎经营原则，击穿营销风控底线与停缓建强制止损红线；",
+             "quantitative":"在业主拖欠2.48亿元且逾期超14个月的情况下，项目部未按规定启动强制停工，反向垫资6314万元；",
+             "management":"暴露出短期产值考核对风险防控的严重扭曲，建议对分管领导及项目经理追究违规经营投资责任。"},
+         "severity":"重大","action":"追究违规经营投资责任"},
+        {"chain_id":"G6","section":"公司治理与战略风控",
+         "name":"“三重一大”与分级授权在结算审批中的制度性失守链",
+         "path":"模型2.1(分包结算超合同额5%) → approval_minutes穿透 → 发现无党委会/董事会纪要 → 演变为“事后补签或班子会代行”",
+         "description":"超额数十倍的分包结算款流出本应由党委会/董事会作为“三重一大”前置集体审议，实际被项目经理或个别领导内部拍板替代，分级授权手册(DOA)被架空。",
+         "models":["M2.1"],
+         "model_names":["分包结算超5%审批穿透"],
+         "conclusion":{
+             "qualitative":"大额分包结算审批违反“三重一大”法定程序，内部控制实质性失效；",
+             "quantitative":"安装工程等11个分包结算超合同总额3160万元(超额率达51.8%)，均未履行“三重一大”集体决议程序；",
+             "management":"暴露出权力失衡与合规监督虚化，已形成重大资金流失漏洞，对越权签字人员移交纪检监察部门追责。"},
+         "severity":"重大","action":"移交纪检监察部门追责"},
+        {"chain_id":"G7","section":"公司治理与战略风控",
+         "name":"诉讼判决瞒报与财务收入虚增失真链",
+         "path":"模型1.4(生效判决与结算审减收入冲减) → 法院生效判决调减结算确权 → 项目部瞒报 → 财务未冲减虚增收入 → 司法强划暴雷",
+         "description":"商务与法务收到不利诉讼判决后选择性隐瞒，财务账面仍按原高估确权挂账虚增报表利润，直至企业银行账户被法院突然划扣。",
+         "models":["M1.4"],
+         "model_names":["生效判决收入冲减"],
+         "conclusion":{
+             "qualitative":"存在隐瞒法律败诉风险、财务会计信息严重失真的恶性违规行为；",
+             "quantitative":"法院生效判决调减结算确权748.68万元，项目部隐瞒未报，财务未作收入冲减，导致账面持续虚增利润超18个月；",
+             "management":"暴露出部门壁垒下的“报喜不报忧”风气，严重误导管理层经营决策，责令立即冲销账面虚增收入并通报追责。"},
+         "severity":"重大","action":"责令冲销虚增收入并通报追责"},
+        {"chain_id":"G8","section":"公司治理与战略风控",
+         "name":"供应链贴息反噬与全口径真实效益侵蚀链",
+         "path":"大量开具供应链金融凭证(云信/融易达) → 巨额贴息与逾期利息 → 模型3.2(全口径效益还原) → 财务总账侵蚀 → 真实巨亏",
+         "description":"为缓解资金压力过度使用供应链金融工具，贴息与利息被计入财务费用总账、未摊入项目制造成本，掩盖项目真实亏损。",
+         "models":["M3.2"],
+         "model_names":["隐性贴息侵蚀与真实效益还原"],
+         "conclusion":{
+             "qualitative":"隐性资金成本严重反噬经营成果，项目呈现典型的“账面虚盈、实质巨亏”；",
+             "quantitative":"账面显示盈利1200万元，但产生供应链贴息3713万元与钢材逾期利息4710万元(合计侵蚀8424万元)，全口径真实效益为实质亏损-3022万元；",
+             "management":"成本核算口径不完整，必须建立“全口径成本核算机制”，将贴息利息全额计入项目责任成本。"},
+         "severity":"重大","action":"建立全口径成本核算机制"},
+        {"chain_id":"G9","section":"公司治理与战略风控",
+         "name":"“时空穿越”人证分离与现场安全实质悬空链",
+         "path":"视频时空碰撞模型(时间/空间多维冲突) → 同一工作负责人同期在多地工单出现 → 模型2.4(未签先进场) → 资质挂靠借壳",
+         "description":"施工单位借资质投标，中标后派出的全是不具备资质的包工头，关键技术管理人员人证分离，现场安全与技术管理制度完全空转。",
+         "models":["M2.4"],
+         "model_names":["未签合同先进场/借壳进场"],
+         "conclusion":{
+             "qualitative":"现场关键管理人员履约严重缺位，构成实质性挂靠借壳与安全管理空转；",
+             "quantitative":"系统识别出47项工单存在同一负责人同期异地多重作业(时空穿越)，涉及违规施工金额855万元；",
+             "management":"现场安全责任体系实质悬空，对施工单位扣减信用分并列入准入黑名单，按合同约定全额扣收违约金。"},
+         "severity":"重大","action":"扣信用分、列准入黑名单、全额扣收违约金"},
+    ]
+    sections = [
+        {"section":"商务结算合规","count":4,"chain_ids":["G1","G2","G3","G4"]},
+        {"section":"公司治理与战略风控","count":5,"chain_ids":["G5","G6","G7","G8","G9"]},
+    ]
+    for chain in chains:
+        hits = []
+        for mid in chain["models"]:
+            for f in core_results.get(mid, []):
+                hits.append({"model_id":mid,"title":f.get("title",""),"risk":f.get("risk",""),
+                             "amount":_money(_number(f.get("amount")))})
+        chain["hit_models"] = list({h["model_id"] for h in hits})
+        chain["hit_count"] = len(hits)
+        chain["all_hit"] = len(chain["hit_models"]) >= len(chain["models"])
+        chain["hit_amount"] = sum(h["amount"] for h in hits)
+        chain["hits"] = hits
+    matched = [c["chain_id"] for c in chains if c["hit_count"] > 0]
+    return {
+        "overview":"系统全面摒弃了原本简单的三条关联提示链，将11个微观计算模型升维聚合成九大高管视角管理归因与战略审计定论链（商务结算合规4链 + 公司治理与战略风控5链）。",
+        "sections": sections,
+        "chains": chains,
+        "total_chains": len(chains),
+        "matched_chains": matched,
+        "unmatched_chains": [c["chain_id"] for c in chains if c["hit_count"] == 0],
+        "pipeline_status": "九大定论链正常流转" if matched else "无命中",
+    }
 
 def build_audit_model_catalog(
     data: dict[str, Any],
@@ -602,14 +992,14 @@ def build_audit_model_catalog(
         categories = set(model.get("categories", []))
         matched_issues = [
             issue for issue in issues
-            if issue.get("category") in categories or (model.get("id") == "M-POST-004" and issue.get("risk") == "高风险")
+            if issue.get("category") in categories or (model.get("id") in {"M-POST-004", "M2.4"} and issue.get("risk") == "高风险")
         ]
         matched_lifecycle = [
             item for item in lifecycle
             if item.get("phase") == model.get("phase")
             and (item.get("model_type") == model.get("model_type") or item.get("domain") in model.get("business_end", ""))
         ]
-        if model.get("id") == "M-POST-005":
+        if model.get("model_type") == "整改类":
             hit_count = remediation_summary.get("total", 0)
             risk_amount = remediation_summary.get("amount", 0)
         else:
@@ -883,6 +1273,9 @@ def build_structured_model(
     agent_orchestration: dict[str, Any],
     audit_model_catalog: dict[str, Any],
     false_settlement_training: dict[str, Any],
+    model_chain: dict[str, Any] | None = None,
+    nine_grid: dict[str, Any] | None = None,
+    cross_model_hints: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     project = data.get("project", {})
     documents = [
@@ -964,6 +1357,9 @@ def build_structured_model(
         "knowledge": deepcopy(data.get("knowledge", [])),
         "thresholds": deepcopy(data.get("meta", {}).get("thresholds", DEFAULT_THRESHOLDS)),
         "fraud_assessment": deepcopy(fraud_assessment),
+        "model_chain": deepcopy(model_chain) if model_chain else None,
+        "nine_grid": deepcopy(nine_grid) if nine_grid else None,
+        "cross_model_hints": deepcopy(cross_model_hints) if cross_model_hints else None,
         "summary": {
             "document_count": len(documents),
             "item_count": len(items),
@@ -987,6 +1383,10 @@ def analyze(
     cost_aggregation = aggregate_cost_components(data)
     fraud_assessment = score_fraud_risk(data, issues)
     agent_orchestration = build_agent_orchestration(data, issues)
+    core_results = run_core_models(data)
+    model_chain = build_model_chain(core_results, issues)
+    nine_grid = build_nine_grid(core_results, data)
+    cross_model_hints = build_cross_model_hints(core_results, issues)
     summary = summarize(data, issues, comparisons, cost_aggregation)
     remediation_tasks = build_remediation_tasks(issues, decisions, remediation_updates)
     false_settlement_training = train_false_settlement_model(data, issues)
@@ -1000,6 +1400,9 @@ def analyze(
         agent_orchestration,
         audit_model_catalog,
         false_settlement_training,
+        model_chain=model_chain,
+        nine_grid=nine_grid,
+        cross_model_hints=cross_model_hints,
     )
     return {
         "meta": deepcopy(data.get("meta", {})),
@@ -1012,6 +1415,10 @@ def analyze(
         "fraud_assessment": fraud_assessment,
         "agent_orchestration": agent_orchestration,
         "audit_model_catalog": audit_model_catalog,
+        "core_results": {mid: fs for mid, fs in core_results.items() if fs},
+        "model_chain": model_chain,
+        "nine_grid": nine_grid,
+        "cross_model_hints": cross_model_hints,
         "false_settlement_training": false_settlement_training,
         "structured_model": structured_model,
         "experts": deepcopy(data.get("experts", [])),

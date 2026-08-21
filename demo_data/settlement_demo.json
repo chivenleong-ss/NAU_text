@@ -25,6 +25,40 @@
     "owner": "南方产业园建设有限公司",
     "contractor": "中建南方工程有限公司",
     "status": "竣工结算",
+    "completed_output": 41200000,
+    "confirmed_output": 38600000,
+    "actual_finish_date": "2026-01-15",
+    "acceptance_date": "2026-03-20",
+    "settlement_date": null,
+    "cumulative_collection": 42000000,
+    "court_judgment_amount": null,
+    "sap_cumulative_revenue": 51086000,
+    "no_variation_allowed": true,
+    "sap_inventory_balance": 8687800,
+    "book_profit": 12000000,
+    "supply_chain_discount_fee": 37130000,
+    "steel_overdue_interest": 47100000,
+    "internal_loan_interest": 0,
+    "owner_default_ratio": 0.15,
+    "owner_default_months": 8,
+    "owner_progress_pay_ratio": 0.80,
+    "subcontract_pay_ratio": 0.85,
+    "sign_date": "2025-03-15",
+    "variations": [
+      {"id": "VAR-001", "occur_date": "2025-06-01", "amount": 300000, "status": "SUBMITTED", "description": "地下车库土方变更"},
+      {"id": "VAR-002", "occur_date": "2025-08-15", "amount": 200000, "status": "APPROVED", "description": "主楼结构优化"},
+      {"id": "VAR-003", "occur_date": "2025-11-01", "amount": 500000, "status": "SUBMITTED", "description": "机电管线调整"}
+    ],
+    "approval_minutes": {"is_triple_importance_large": false},
+    "materials": [
+      {"name": "钢筋", "budget_quantity": 1000, "actual_quantity": 1058, "purchase_unit_price": 2969.70, "loss_rate": 0.025},
+      {"name": "混凝土", "budget_quantity": 3200, "actual_quantity": 3280, "purchase_unit_price": 400, "loss_rate": 0.00}
+    ],
+    "third_party_labors": [
+      {"name": "第三方代工-机电安装", "amount": 7330000, "is_deducted_in_settlement": false}
+    ],
+    "subcontract_settlement": {"audit_amount": 15180000, "contract_amount": 10000000},
+    "diary_first_date": "2025-01-20",
     "documents": [
       {"id": "doc-bid", "type": "招标文件", "name": "招标工程量清单.xlsx", "version": "V1.0", "location": "Sheet1 / 第 28-36 行", "status": "已识别", "fields": 42},
       {"id": "doc-contract", "type": "合同", "name": "NF-026-施工合同.pdf", "version": "签订版", "location": "第 18、45、92 页", "status": "已识别", "fields": 58},
