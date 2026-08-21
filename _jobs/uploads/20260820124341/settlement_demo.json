@@ -1,0 +1,184 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "last_analysis": "2026-08-19 14:32",
+    "analyst": "主审：审计部",
+    "thresholds": {
+      "quantity_deviation_pct": 0.05,
+      "unit_price_deviation_pct": 0.1,
+      "market_deviation_pct": 0.1,
+      "duplicate_overlap_pct": 0.95
+    }
+  },
+  "organizations": [
+    {"id": "group", "level": "集团", "name": "中国建筑第四工程局"},
+    {"id": "region", "level": "工程局", "name": "华南区域公司"},
+    {"id": "company", "level": "公司", "name": "基础设施事业部"},
+    {"id": "division", "level": "事业部", "name": "城市更新事业部"},
+    {"id": "project", "level": "项目", "name": "南方产业园项目部"}
+  ],
+  "project": {
+    "id": "NF-026",
+    "name": "南方产业园二期项目",
+    "contract_name": "南方产业园二期施工总承包合同",
+    "phase": "竣工结算审计",
+    "owner": "南方产业园建设有限公司",
+    "contractor": "中建南方工程有限公司",
+    "status": "竣工结算",
+    "documents": [
+      {"id": "doc-bid", "type": "招标文件", "name": "招标工程量清单.xlsx", "version": "V1.0", "location": "Sheet1 / 第 28-36 行", "status": "已识别", "fields": 42},
+      {"id": "doc-contract", "type": "合同", "name": "NF-026-施工合同.pdf", "version": "签订版", "location": "第 18、45、92 页", "status": "已识别", "fields": 58},
+      {"id": "doc-change", "type": "变更签证", "name": "变更签证台账及 BG-018、ZQ-023.pdf", "version": "截至 2026-06", "location": "台账第 7、23 行；签证第 2 页", "status": "已识别", "fields": 31},
+      {"id": "doc-acceptance", "type": "竣工验收", "name": "竣工验收与移交资料.pdf", "version": "归档版", "location": "第 11、37 页", "status": "已识别", "fields": 26},
+      {"id": "doc-settlement", "type": "结算书", "name": "NF-026-工程结算书.xlsx", "version": "承包人申报版", "location": "分部分项 / 第 12-19 页", "status": "已识别", "fields": 66},
+      {"id": "doc-material", "type": "材料台账", "name": "钢筋材料收发存台账.xlsx", "version": "2025-03 至 2026-06", "location": "钢筋页 / 第 114-128 行", "status": "已识别", "fields": 19},
+      {"id": "doc-machine", "type": "机械台班", "name": "机械台班结算及施工日志.zip", "version": "2026-01 至 2026-06", "location": "台班表第 8-15 行；日志缺口 8 天", "status": "已识别", "fields": 22}
+    ],
+    "financials": {
+      "contract_total": 48600000,
+      "approved_change_total": 3200000,
+      "settlement_total": 51086000,
+      "actual_certified_total": 50200000,
+      "paid_total": 50620000
+    }
+  },
+  "line_items": [
+    {
+      "item_code": "010101001",
+      "name": "土方开挖",
+      "unit": "m³",
+      "location": "地下车库",
+      "bid": {"quantity": 9000, "unit_price": 28},
+      "contract": {"quantity": 10000, "unit_price": 30},
+      "change": {"quantity": 10000, "unit_price": 30, "amount": 300000, "id": "BG-018", "relation": "overlap", "approved": true},
+      "actual": {"quantity": 10000, "unit_price": 30},
+      "settlement": {"quantity": 10000, "unit_price": 30},
+      "evidence": [
+        {"document": "结算书.pdf", "location": "第 12 页 / 清单 010101001", "fact": "申报土方开挖 10,000m³"},
+        {"document": "变更签证 BG-018.pdf", "location": "第 2 页 / 地下车库", "fact": "签证土方开挖 10,000m³"},
+        {"document": "合同清单 NF-026.pdf", "location": "第 45 页 / 清单 010101001", "fact": "合同土方开挖 10,000m³"}
+      ]
+    },
+    {
+      "item_code": "010501002",
+      "name": "C30 混凝土",
+      "unit": "m³",
+      "location": "主楼结构",
+      "bid": {"quantity": 3000, "unit_price": 385},
+      "contract": {"quantity": 3200, "unit_price": 400},
+      "change": {"quantity": 0, "unit_price": 400, "amount": 0, "approved": true},
+      "actual": {"quantity": 3200, "unit_price": 420},
+      "settlement": {"quantity": 3200, "unit_price": 447.5},
+      "market_unit_price": 420,
+      "evidence": [
+        {"document": "合同清单 NF-026.pdf", "location": "第 48 页 / 清单 010501002", "fact": "合同单价 400 元/m³"},
+        {"document": "结算书.xlsx", "location": "Sheet 分部分项 / 第 33 行", "fact": "结算单价 447.5 元/m³"},
+        {"document": "材料采购对账单.xlsx", "location": "Sheet 混凝土 / 第 19 行", "fact": "同期参考价 420 元/m³"}
+      ]
+    },
+    {
+      "item_code": "040801001",
+      "name": "临时设施",
+      "unit": "项",
+      "location": "项目临建",
+      "bid": {"quantity": 1, "unit_price": 180000},
+      "contract": {"quantity": 1, "unit_price": 250000},
+      "change": {"quantity": 0, "unit_price": 250000, "amount": 0, "approved": true},
+      "actual": {"quantity": 0, "unit_price": 250000},
+      "settlement": {"quantity": 1, "unit_price": 250000},
+      "evidence": [
+        {"document": "结算书.xlsx", "location": "Sheet 措施项目 / 第 6 行", "fact": "临时设施申报 1 项，250,000 元"},
+        {"document": "竣工验收与移交资料.pdf", "location": "第 37 页 / 移交清单", "fact": "未见临时设施实体移交记录"}
+      ]
+    },
+    {
+      "item_code": "010515001",
+      "name": "钢筋材料",
+      "unit": "t",
+      "location": "主体结构",
+      "bid": {"quantity": 1000, "unit_price": 2920},
+      "contract": {"quantity": 1000, "unit_price": 2969.69697},
+      "change": {"quantity": 0, "unit_price": 2969.69697, "amount": 0, "approved": true},
+      "actual": {"quantity": 1000, "unit_price": 2969.69697},
+      "settlement": {"quantity": 1000, "unit_price": 2969.69697},
+      "leakage": {"kind": "material_loss", "base_quantity": 1000, "recorded_consumption": 1058, "target_loss_rate": 0.025, "unit_price": 2969.69697},
+      "evidence": [
+        {"document": "钢筋材料收发存台账.xlsx", "location": "钢筋页 / 第 114-128 行", "fact": "领用 1,058t，理论消耗基数 1,000t"},
+        {"document": "目标成本控制表.xlsx", "location": "Sheet 材料控制 / 第 12 行", "fact": "钢筋目标损耗率 2.5%"}
+      ]
+    },
+    {
+      "item_code": "021001004",
+      "name": "挖掘机台班",
+      "unit": "台班",
+      "location": "土方工程",
+      "bid": {"quantity": 120, "unit_price": 1250},
+      "contract": {"quantity": 120, "unit_price": 1343.75},
+      "change": {"quantity": 0, "unit_price": 1343.75, "amount": 0, "approved": true},
+      "actual": {"quantity": 112, "unit_price": 1343.75},
+      "settlement": {"quantity": 120, "unit_price": 1343.75},
+      "leakage": {"kind": "machine_mismatch", "claimed_hours": 64, "matched_hours": 0, "unit_price": 10750},
+      "evidence": [
+        {"document": "机械台班结算.xlsx", "location": "Sheet 台班 / 第 8-15 行", "fact": "申报 8 个挖掘机台班"},
+        {"document": "施工日志.zip", "location": "2026-04-11 至 2026-04-18", "fact": "连续 8 个台班缺少作业记录"}
+      ]
+    },
+    {
+      "item_code": "ZQ-023",
+      "name": "地下室抗浮及排水变更",
+      "unit": "项",
+      "location": "地下室",
+      "bid": {"quantity": 0, "unit_price": 0},
+      "contract": {"quantity": 0, "unit_price": 0},
+      "change": {"quantity": 1, "unit_price": 800000, "amount": 800000, "id": "ZQ-023", "relation": "additional", "approved": false, "approval_chain": ["建设单位", "监理单位"]},
+      "actual": {"quantity": 1, "unit_price": 800000},
+      "settlement": {"quantity": 1, "unit_price": 800000},
+      "evidence": [
+        {"document": "变更签证台账.xlsx", "location": "Sheet 变更台账 / 第 23 行", "fact": "ZQ-023 变更金额 800,000 元"},
+        {"document": "ZQ-023 变更审批单.pdf", "location": "第 1-3 页", "fact": "缺项目商务经理签认"},
+        {"document": "合同专用条款.pdf", "location": "第 92 页 / 变更审批", "fact": "变更须完成项目商务审批链后计价"}
+      ]
+    }
+  ],
+  "experts": [
+    {"id": "cost", "name": "造价专家", "domain": "清单计价与工程量", "availability": "在线"},
+    {"id": "commercial", "name": "商务专家", "domain": "合同、变更与索赔", "availability": "在线"},
+    {"id": "delivery", "name": "履约专家", "domain": "现场完成量与验收", "availability": "在线"},
+    {"id": "procurement", "name": "招采供应链专家", "domain": "材料、市场价与损耗", "availability": "在线"},
+    {"id": "finance", "name": "财务专家", "domain": "支付、成本与现金流", "availability": "在线"},
+    {"id": "legal", "name": "法务专家", "domain": "授权、程序与索赔效力", "availability": "在线"}
+  ],
+  "expert_opinions": {
+    "post-quantity-001": [
+      {"expert": "造价专家", "fact": "结算清单与 BG-018 签证均为 10,000m³。", "basis": "合同清单第 45 页、签证第 2 页", "judgement": "同编码同部位工程量重合，存在重复计价。", "risk": "高", "recommendation": "在变更台账完成扣减核验前，暂按 300,000 元核减。", "status": "已确认"},
+      {"expert": "商务专家", "fact": "BG-018 已由建设、监理确认，项目商务经理未签认。", "basis": "签证审批链", "judgement": "程序和合同扣减关系需要补证。", "risk": "高", "recommendation": "调取变更台账及合同清单扣减记录。", "status": "已确认"},
+      {"expert": "履约专家", "fact": "地下车库确有土方施工记录。", "basis": "收方记录待关联", "judgement": "实际发生不等于可以重复计价。", "risk": "中", "recommendation": "补充现场收方记录。", "status": "待补证"}
+    ],
+    "post-price-001": [
+      {"expert": "造价专家", "fact": "结算单价 447.5 元/m³，高于合同单价 400 元/m³。", "basis": "合同第 48 页、结算 Sheet 分部分项第 33 行", "judgement": "偏离合同 11.88%，超过规则阈值。", "risk": "中", "recommendation": "核对调价条款、审批单和同期市场价。", "status": "已确认"},
+      {"expert": "招采供应链专家", "fact": "同期参考价为 420 元/m³。", "basis": "材料采购对账单", "judgement": "结算价同时高于市场参考价 6.55%。", "risk": "中", "recommendation": "补充供应商报价及调价依据。", "status": "待补证"}
+    ],
+    "post-change-001": [
+      {"expert": "法务专家", "fact": "ZQ-023 缺项目商务经理签认。", "basis": "合同专用条款第 92 页", "judgement": "审批链不完整，计价效力存在程序风险。", "risk": "高", "recommendation": "补齐授权审批，或将金额转为待核验事项。", "status": "已确认"},
+      {"expert": "商务专家", "fact": "变更已进入结算申报。", "basis": "变更台账第 23 行、结算书", "judgement": "未完成审批即计入结算，存在超前计价风险。", "risk": "高", "recommendation": "冻结该项支付并提交主审裁量。", "status": "已确认"}
+    ]
+  },
+  "lifecycle_findings": [
+    {"id": "pre-001", "phase": "事前", "model_type": "预警类", "domain": "招采与合同", "title": "合同清单与招标清单存在工程量调整", "risk": "中风险", "amount": 1620000, "rule": "同编码合同工程量较招标工程量偏差超过 5%", "status": "预警", "suggestion": "将清单调整说明、计价依据和审批链纳入合同归档。"},
+    {"id": "in-001", "phase": "事中", "model_type": "预警类", "domain": "变更与现场签证", "title": "变更签证审批链未闭合即进入结算", "risk": "高风险", "amount": 800000, "rule": "结算引用的变更记录 approval=false", "status": "问题", "suggestion": "变更审批未闭合时锁定支付并自动追补证据。"},
+    {"id": "in-002", "phase": "事中", "model_type": "预警类", "domain": "成本与支付", "title": "已支付金额高于实际完成量对应金额", "risk": "中风险", "amount": 420000, "rule": "paid_total - actual_certified_total > 0", "status": "预警", "suggestion": "将支付节点与现场完成量、验收节点联动。"},
+    {"id": "post-001", "phase": "事后", "model_type": "问题类", "domain": "结算与整改", "title": "结算疑点需主审确认后形成正式审计问题", "risk": "高风险", "amount": 1686000, "rule": "规则引擎识别的疑点尚未完成主审裁量", "status": "待主审", "suggestion": "按证据链、专家意见和制度依据形成报告并闭环。"}
+  ],
+  "knowledge": [
+    {"id": "kb-001", "title": "分供方结算管理办法", "keywords": ["签证", "审批", "商务经理", "结算"], "basis": "第 4.2、5.1 条", "answer": "未完成合同约定审批链的签证不得直接作为最终结算依据。应补充授权范围内的审批记录、现场确认资料和变更台账扣减关系；在证据不足时应转为待核验事项。"},
+    {"id": "kb-002", "title": "项目主要成本控制要点", "keywords": ["损耗", "材料", "钢筋", "跑冒滴漏"], "basis": "材料损耗控制表第 3 类", "answer": "材料损耗应以理论消耗量、领用量、退库量和现场盘点量勾稽。超过目标损耗率的部分应追溯到施工日志、设计变更和损耗审批，不得直接计入结算。"},
+    {"id": "kb-003", "title": "工程结算审核指引", "keywords": ["工程量", "单价", "三表", "合同", "市场价"], "basis": "第 2.1、2.3、3.4 条", "answer": "工程量应同时核对合同、变更、实际完成和结算记录；单价应优先适用合同约定，调价需有批准依据，市场参考价只用于异常提示和佐证。"}
+  ],
+  "closure": [
+    {"stage": "发现疑点", "status": "已完成", "owner": "智能体", "time": "2026-08-19"},
+    {"stage": "专家会审", "status": "进行中", "owner": "造价/商务/履约/法务", "time": "2026-08-20"},
+    {"stage": "主审定稿", "status": "待处理", "owner": "审计部主审", "time": ""},
+    {"stage": "整改验证", "status": "待处理", "owner": "项目商务部", "time": ""},
+    {"stage": "销号归档", "status": "待处理", "owner": "审计档案室", "time": ""}
+  ]
+}

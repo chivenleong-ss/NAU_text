@@ -1,0 +1,9 @@
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on http://127.0.0.1:5100
+Press CTRL+C to quit
+127.0.0.1 - - [20/Aug/2026 14:32:09] "GET /api/settlement-demo/state HTTP/1.1" 200 -
+127.0.0.1 - - [20/Aug/2026 14:32:10] "POST /api/settlement-demo/remediation HTTP/1.1" 400 -
+127.0.0.1 - - [20/Aug/2026 14:32:23] "POST /api/settlement-demo/decision HTTP/1.1" 200 -
+127.0.0.1 - - [20/Aug/2026 14:32:23] "POST /api/settlement-demo/remediation HTTP/1.1" 200 -
+127.0.0.1 - - [20/Aug/2026 14:32:37] "GET /api/settlement-demo/export?format=md HTTP/1.1" 200 -
+127.0.0.1 - - [20/Aug/2026 14:32:37] "POST /api/settlement-demo/reset HTTP/1.1" 200 -
