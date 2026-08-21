@@ -1,210 +1,2285 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>工程结算审计智能体</title>
-<style>
-:root{--blue:#0b67bd;--navy:#112b49;--ink:#24394f;--muted:#6e8092;--line:#d9e3ed;--bg:#f3f6f9;--red:#c73745;--amber:#b87516;--green:#158464}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:13px "Microsoft YaHei",Arial,sans-serif}
-button,input,select,textarea{font:inherit}button{height:32px;border:1px solid #b8ccdf;border-radius:3px;background:#fff;color:#365875;padding:0 12px;cursor:pointer}button.primary{background:var(--blue);border-color:var(--blue);color:#fff}button.danger{background:var(--red);border-color:var(--red);color:#fff}button:disabled{opacity:.55;cursor:not-allowed}
-input,select,textarea{border:1px solid #cbd8e6;border-radius:3px;background:#fff;color:var(--ink)}input,select{height:32px;padding:0 9px}textarea{width:100%;min-height:84px;padding:9px;resize:vertical}
-.top{height:58px;background:linear-gradient(90deg,#0758ad,#0b7ed4);color:#fff;display:flex;align-items:center;padding:0 20px;gap:24px}.logo{font-weight:700;font-size:18px;letter-spacing:1px;min-width:230px}.logo:before{content:"▦";font-size:22px;margin-right:9px;vertical-align:-2px}.topnav{display:flex;height:100%;align-items:center;gap:24px;color:#dcefff}.topnav span{height:100%;display:flex;align-items:center;cursor:pointer;border-bottom:3px solid transparent}.topnav span.active{color:#fff;border-bottom-color:#fff}.user{margin-left:auto;color:#e8f4ff;white-space:nowrap}
-.shell{display:flex;min-height:calc(100vh - 58px)}.side{width:226px;background:var(--navy);color:#b9cadc;padding:16px 11px;flex:0 0 auto}.side-title{font-size:12px;color:#80a6ce;margin:0 12px 10px}.side a{display:flex;align-items:center;gap:10px;margin:3px 0;padding:11px 13px;color:inherit;text-decoration:none;border-radius:3px;cursor:pointer}.side a span{width:20px;text-align:center;color:#76b8f0}.side a.active,.side a:hover{background:#1262a8;color:#fff}.workspace{flex:1;min-width:0}.crumb{height:43px;background:#fff;border-bottom:1px solid var(--line);padding:13px 22px;color:var(--muted)}.crumb b{color:var(--blue);font-weight:400}.content{padding:16px 22px}.view{display:none}.view.active{display:block}
-.toolbar{background:#fff;border:1px solid var(--line);padding:12px 14px;display:flex;align-items:center;gap:9px;flex-wrap:wrap;box-shadow:0 1px 2px #162a410f;margin-bottom:13px}.toolbar label{color:var(--muted)}.toolbar .grow{margin-left:auto;color:var(--muted)}
-.stats{display:grid;grid-template-columns:repeat(5,minmax(120px,1fr));gap:10px;margin-bottom:13px}.stat{background:#fff;border:1px solid var(--line);padding:12px 14px;box-shadow:0 1px 2px #162a410f}.stat small{display:block;color:var(--muted)}.stat strong{display:block;margin-top:7px;font-size:22px;color:#102842}.stat.alert strong{color:var(--red)}.stat.good strong{color:var(--green)}
-.section{background:#fff;border:1px solid var(--line);box-shadow:0 1px 2px #162a410f;margin-bottom:13px}.section-head{min-height:43px;border-bottom:1px solid var(--line);display:flex;align-items:center;padding:10px 14px;gap:10px}.section-head:before{content:"";width:4px;height:17px;background:var(--blue);flex:0 0 auto}.section-head.red:before{background:var(--red)}.section-head.green:before{background:var(--green)}.section-head h2{font-size:15px;margin:0;color:#102842}.section-head .hint{color:var(--muted)}.section-head .action{margin-left:auto}.section-body{padding:13px 14px}.grid2{display:grid;grid-template-columns:1.08fr .92fr;gap:13px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}
-.data-table{width:100%;border-collapse:collapse}.data-table th{background:#f5f8fb;color:#627990;font-weight:400;text-align:left;padding:9px;border-bottom:1px solid var(--line);white-space:nowrap}.data-table td{padding:9px;border-bottom:1px solid #edf1f5;vertical-align:top}.data-table tr:hover{background:#f5f9fe}.data-table tr.active{background:#edf6ff;box-shadow:inset 3px 0 var(--blue)}.table-scroll{overflow:auto}
-.tag{display:inline-block;border-radius:2px;padding:3px 7px;font-size:11px;line-height:1.25;white-space:nowrap}.tag.red{color:#a82c39;background:#fff0f2}.tag.amber{color:#98620e;background:#fff7e8}.tag.green{color:#0a7055;background:#ecfaf4}.tag.blue{color:#0e61a8;background:#e9f3ff}.money{font-weight:700;color:var(--red)}.click{color:var(--blue);cursor:pointer}.muted{color:var(--muted)}
-.process{display:grid;grid-template-columns:repeat(6,1fr);padding:16px 20px;gap:5px}.step{text-align:center;position:relative;color:var(--muted)}.step:not(:last-child):after{content:"";height:1px;background:#b9ccde;position:absolute;top:13px;left:58%;right:-45%}.dot{width:27px;height:27px;margin:0 auto 7px;border-radius:50%;background:#dfeaf4;line-height:27px;position:relative;z-index:1}.step.done .dot{background:var(--green);color:#fff}.step.current .dot{background:var(--red);color:#fff;box-shadow:0 0 0 4px #ffe1e4}
-.doc-list{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.doc{border:1px solid var(--line);padding:11px;background:#fbfdff;min-height:110px}.doc b{display:block;color:#102842;margin-bottom:6px}.upload-zone{border:1px dashed #9fb7d0;background:#f8fbff;padding:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.compare-row{display:grid;grid-template-columns:150px repeat(4,1fr);gap:0;border:1px solid var(--line);border-bottom:0}.compare-row:last-child{border-bottom:1px solid var(--line)}.compare-row>div{padding:9px;border-right:1px solid var(--line);background:#fff}.compare-row>div:last-child{border-right:0}.compare-head>div{background:#f5f8fb;color:#627990}
-.issue-detail{display:grid;grid-template-columns:.86fr 1.14fr;gap:13px}.summary-box{background:#fff8f8;border:1px solid #f1c5cb;padding:12px;line-height:1.75}.evidence-list{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.paper{border:1px solid #ced9e4;background:#fff;box-shadow:0 2px 4px #14284614;padding:14px;line-height:1.75;min-height:145px}.paper h3{font-size:14px;margin:0 0 8px;text-align:center;color:#17324c}.paper .mark{display:block;margin-top:8px;background:#fff0f2;border:1px solid #efadb5;color:#a42a37;padding:6px}
-.expert-card{border:1px solid var(--line);background:#fbfdff;padding:12px;margin-bottom:9px}.expert-card h3{font-size:14px;margin:0 0 7px;color:#102842}.expert-card p{margin:5px 0;line-height:1.65}.review-panel{display:grid;grid-template-columns:.9fr 1.1fr;gap:13px}.radio-line{display:block;margin:8px 0}.chart{display:grid;gap:9px}.bar-line{display:grid;grid-template-columns:120px 1fr 92px;gap:9px;align-items:center}.bar{height:10px;background:#e8eef5}.bar i{display:block;height:100%;background:var(--blue)}.bar i.red{background:var(--red)}.bar i.amber{background:var(--amber)}.bar i.green{background:var(--green)}
-.chat{display:grid;grid-template-columns:1fr auto;gap:8px}.answer{margin-top:10px;line-height:1.75;color:#3d5268}.closure{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}.closure-item{border-left:3px solid var(--line);padding:7px 10px;background:#fbfdff}.closure-item.done{border-color:var(--green)}.closure-item.current{border-color:var(--red)}.closure-item b{display:block;color:#102842;margin-bottom:4px}.remediation-actions{display:flex;gap:6px;flex-wrap:wrap}.remediation-actions button{height:28px;padding:0 8px}.lifecycle{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.life-card{border-top:3px solid var(--line);background:#fff;border-left:1px solid var(--line);border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:11px;min-height:155px}.life-card.high{border-top-color:var(--red)}.life-card.medium{border-top-color:var(--amber)}.life-card b{display:block;color:#102842;margin:6px 0}.empty{padding:26px;text-align:center;color:var(--muted)}.toast{position:fixed;right:18px;bottom:18px;background:#102842;color:#fff;padding:10px 13px;border-radius:3px;box-shadow:0 8px 22px #0003;display:none;z-index:9}.note{margin:10px 0;color:var(--muted);font-size:12px}
-.ov-field{position:absolute;background:#EEF2FF;border:1px solid #C7D2FE;color:#3730A3;font-size:12px;padding:3px 7px;overflow:hidden;line-height:1.4;transition:all .18s ease;cursor:pointer;border-radius:2px;font-weight:500;}
-.ov-field.ov-hot{background:#FEE2E2;border:2px solid #DC2626;color:#7F1D1D;font-weight:700;z-index:3;box-shadow:0 0 0 3px rgba(220,38,38,0.1);}
-.ov-stamp{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-28deg);color:#CBD5E1;font-size:28px;font-weight:700;letter-spacing:5px;pointer-events:none;border:3px solid #E2E8F0;padding:12px 24px;border-radius:6px;opacity:0.6;}
-#viewerOriginal .ov-field:hover{border-color:#4F46E5;background:#E0E7FF;transform:scale(1.02);}
-@media(max-width:1080px){.stats{grid-template-columns:repeat(3,1fr)}.doc-list,.grid3,.lifecycle{grid-template-columns:repeat(2,1fr)}.grid2,.issue-detail,.review-panel{grid-template-columns:1fr}.process{grid-template-columns:repeat(3,1fr)}.step:after{display:none}}@media(max-width:740px){.topnav{display:none}.side{display:none}.content{padding:12px}.stats,.doc-list,.grid3,.lifecycle,.closure,.evidence-list{grid-template-columns:1fr}.toolbar .grow{margin-left:0}.compare-row{grid-template-columns:1fr}.compare-row>div{border-right:0;border-bottom:1px solid var(--line)}.compare-row>div:last-child{border-bottom:0}.bar-line{grid-template-columns:1fr}.table-scroll .data-table{min-width:900px}}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中建集团结算审核智能体 - 四层流转架构</title>
+    <style>
+        /* ============================================================================
+           中建集团统一 UI 视觉系统 - Design Tokens
+           ============================================================================ */
+        :root {
+            /* 品牌色彩变量 */
+            --primary: #0080cc;
+            --primary-deep: #006fb3;
+            --primary-soft: #eaf5fc;
+            --bg: #f3f7fc;
+            --panel: #ffffff;
+            --line: #d9e5f3;
+            --radius: 8px;
+
+            /* 状态色彩 */
+            --danger: #a76a67;
+            --danger-bg: #fbf3f2;
+            --warning: #8e7a4b;
+            --warning-bg: #f7f4ee;
+            --success: #4f8b70;
+            --success-bg: #f1f7f4;
+            --info: #5989a8;
+            --info-bg: #f0f5f8;
+
+            /* 文本色彩 */
+            --text-primary: #1a2b3c;
+            --text-secondary: #546e7a;
+            --text-muted: #90a4ae;
+
+            /* 时段胶囊色彩 */
+            --phase-before: #4a90e2;
+            --phase-during: #e8914a;
+            --phase-after: #9b6bb8;
+
+            /* 阴影 */
+            --shadow: 0 6px 18px rgba(45, 90, 145, 0.06);
+            --shadow-hover: 0 8px 24px rgba(45, 90, 145, 0.12);
+
+            /* 字体系统 */
+            --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            --font-mono: 'SF Mono', 'Consolas', monospace;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background: var(--bg);
+            background-image: radial-gradient(circle at top right, rgba(0,128,204,0.12), transparent 26%),
+                              linear-gradient(180deg, #f6f9fd 0%, #edf3fa 100%);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* ============================================================================
+           顶部导航栏
+           ============================================================================ */
+        .top-nav {
+            background: var(--panel);
+            border-bottom: 1px solid var(--line);
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 64px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary-deep);
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-deep) 100%);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 4px;
+            list-style: none;
+        }
+
+        .nav-item {
+            padding: 8px 16px;
+            cursor: pointer;
+            border-radius: 999px;
+            transition: all 0.2s;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .nav-item:hover {
+            background: var(--primary-soft);
+            color: var(--primary-deep);
+        }
+
+        .nav-item.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* ============================================================================
+           主内容区域
+           ============================================================================ */
+        .main-content {
+            max-width: 1600px;
+            margin: 24px auto;
+            padding: 0 24px;
+        }
+
+        .view-container {
+            display: none;
+        }
+
+        .view-container.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ============================================================================
+           筛选器面板
+           ============================================================================ */
+        .filter-panel {
+            background: var(--panel);
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow);
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            align-items: end;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .filter-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .filter-select {
+            padding: 8px 12px;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-soft);
+        }
+
+        /* ============================================================================
+           统计卡片
+           ============================================================================ */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: var(--panel);
+            border-radius: var(--radius);
+            padding: 24px;
+            box-shadow: var(--shadow);
+            transition: all 0.2s;
+            border-left: 4px solid var(--primary);
+        }
+
+        .stat-card:hover {
+            box-shadow: var(--shadow-hover);
+            transform: translateY(-2px);
+        }
+
+        .stat-card.danger {
+            border-left-color: var(--danger);
+        }
+
+        .stat-card.warning {
+            border-left-color: var(--warning);
+        }
+
+        .stat-card.success {
+            border-left-color: var(--success);
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+
+        .stat-unit {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-left: 4px;
+        }
+
+        .stat-trend {
+            font-size: 12px;
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .stat-trend.up {
+            color: var(--danger);
+        }
+
+        .stat-trend.down {
+            color: var(--success);
+        }
+
+        /* ============================================================================
+           标签系统（时段胶囊、模型类型、风险等级）
+           ============================================================================ */
+        .tag {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 500;
+            line-height: 1.4;
+        }
+
+        .tag.red {
+            background: var(--danger-bg);
+            color: var(--danger);
+        }
+
+        .tag.amber {
+            background: var(--warning-bg);
+            color: var(--warning);
+        }
+
+        .tag.blue {
+            background: var(--info-bg);
+            color: var(--info);
+        }
+
+        .tag.green {
+            background: var(--success-bg);
+            color: var(--success);
+        }
+
+        .tag.purple {
+            background: #f3f0f7;
+            color: var(--phase-after);
+        }
+
+        .tag.orange {
+            background: var(--warning-bg);
+            color: var(--phase-during);
+        }
+
+        /* ============================================================================
+           双专题定论看板
+           ============================================================================ */
+        .chain-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .chain-panel {
+            background: var(--panel);
+            border-radius: var(--radius);
+            padding: 24px;
+            box-shadow: var(--shadow);
+        }
+
+        .chain-panel.commercial {
+            border-top: 3px solid var(--primary);
+        }
+
+        .chain-panel.governance {
+            border-top: 3px solid var(--danger);
+            position: relative;
+        }
+
+        .chain-panel.governance::after {
+            content: "⚠";
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 24px;
+            height: 24px;
+            background: var(--danger);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .chain-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        .chain-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .chain-item {
+            padding: 12px;
+            background: var(--bg);
+            border-radius: 6px;
+            border-left: 3px solid var(--line);
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .chain-item:hover {
+            border-left-color: var(--primary);
+            background: var(--primary-soft);
+        }
+
+        .chain-item-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .chain-item-meta {
+            font-size: 12px;
+            color: var(--text-secondary);
+            display: flex;
+            gap: 12px;
+        }
+
+        /* ============================================================================
+           表格样式
+           ============================================================================ */
+        .data-table {
+            width: 100%;
+            background: var(--panel);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .data-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table thead {
+            background: var(--bg);
+            border-bottom: 2px solid var(--line);
+        }
+
+        .data-table th {
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .data-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--line);
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+
+        .data-table tbody tr:hover {
+            background: var(--primary-soft);
+        }
+
+        .data-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* ============================================================================
+           按钮系统
+           ============================================================================ */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 999px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-deep);
+            box-shadow: 0 4px 12px rgba(0, 128, 204, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--bg);
+            color: var(--text-primary);
+            border: 1px solid var(--line);
+        }
+
+        .btn-secondary:hover {
+            background: var(--line);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #8e5654;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #3d6e58;
+        }
+
+        .btn-sm {
+            padding: 6px 14px;
+            font-size: 13px;
+        }
+
+        /* ============================================================================
+           弹窗系统（双栏穿透核对窗）
+           ============================================================================ */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(26, 43, 60, 0.75);
+            backdrop-filter: blur(4px);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-container {
+            background: var(--panel);
+            border-radius: var(--radius);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 90vw;
+            max-height: 85vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: var(--bg);
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            background: var(--danger-bg);
+            color: var(--danger);
+        }
+
+        .modal-body {
+            padding: 24px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .split-screen {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            height: 60vh;
+        }
+
+        .screen-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .screen-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .pdf-viewer {
+            flex: 1;
+            background: var(--bg);
+            border-radius: 6px;
+            overflow: auto;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+        }
+
+        .structured-data {
+            flex: 1;
+            background: var(--bg);
+            border-radius: 6px;
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        .kv-pair {
+            display: grid;
+            grid-template-columns: 140px 1fr 80px;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--line);
+            align-items: center;
+        }
+
+        .kv-key {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .kv-value {
+            font-size: 14px;
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+        }
+
+        .kv-confidence {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-align: right;
+        }
+
+        .kv-value input {
+            width: 100%;
+            padding: 6px 10px;
+            border: 1px solid var(--line);
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: var(--font-mono);
+        }
+
+        /* ============================================================================
+           统一互动讨论层
+           ============================================================================ */
+        .discussion-container {
+            background: var(--panel);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .discussion-layout {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 24px;
+            margin-top: 16px;
+        }
+
+        .chat-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .chat-messages {
+            background: var(--bg);
+            border-radius: 6px;
+            padding: 16px;
+            height: 400px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .chat-message {
+            padding: 12px 16px;
+            border-radius: 8px;
+            max-width: 85%;
+        }
+
+        .chat-message.user {
+            background: var(--primary);
+            color: white;
+            align-self: flex-end;
+        }
+
+        .chat-message.assistant {
+            background: white;
+            border: 1px solid var(--line);
+            align-self: flex-start;
+        }
+
+        .chat-input-group {
+            display: flex;
+            gap: 12px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            font-size: 14px;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-soft);
+        }
+
+        .context-panel {
+            background: var(--bg);
+            border-radius: 6px;
+            padding: 16px;
+            height: 500px;
+            overflow-y: auto;
+        }
+
+        .context-section {
+            margin-bottom: 20px;
+        }
+
+        .context-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .context-content {
+            font-size: 13px;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        /* ============================================================================
+           专家圆桌面板
+           ============================================================================ */
+        .expert-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .expert-card {
+            background: var(--bg);
+            border-radius: 6px;
+            padding: 16px;
+            border-left: 3px solid var(--primary);
+        }
+
+        .expert-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .expert-badge {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: var(--primary-soft);
+            color: var(--primary);
+        }
+
+        .expert-opinion {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* ============================================================================
+           三表穿透比对（双轨并列）
+           ============================================================================ */
+        .comparison-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        .rail-panel {
+            background: var(--panel);
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .rail-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .rail-title.owner {
+            border-bottom-color: var(--success);
+        }
+
+        .rail-title.subcontractor {
+            border-bottom-color: var(--warning);
+        }
+
+        .amount-display {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .amount-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            background: var(--bg);
+            border-radius: 6px;
+        }
+
+        .amount-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .amount-value {
+            font-size: 18px;
+            font-weight: 700;
+            font-family: var(--font-mono);
+        }
+
+        /* ============================================================================
+           响应式布局
+           ============================================================================ */
+        @media (max-width: 1200px) {
+            .chain-container {
+                grid-template-columns: 1fr;
+            }
+
+            .comparison-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .discussion-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .expert-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-menu {
+                display: none;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .split-screen {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body>
-<header class="top"><div class="logo">工程结算审计智能体</div><nav class="topnav"><span data-view="overview" class="active">审计工作台</span><span data-view="model">结构模型</span><span data-view="report">经营分析</span><span data-view="import">资料接入</span><span data-view="knowledge">知识中心</span><span data-view="review">主审复核</span></nav><div class="user" id="analyst">主审：审计部</div></header>
-<div class="shell"><aside class="side"><div class="side-title">审计业务</div><a data-view="overview" class="active"><span>▣</span>主审驾驶舱</a><a data-view="import"><span>⇪</span>资料接入</a><a data-view="model"><span>▤</span>结构化建模</a><a data-view="compare"><span>≡</span>三表比对</a><a data-view="issues"><span>●</span>疑点中心 <i id="sideIssueCount" style="margin-left:auto;color:#ff8792">0</i></a><a data-view="experts"><span>♧</span>专家会审</a><a data-view="review"><span>✓</span>主审复核</a><a data-view="report"><span>▥</span>报告与经营分析</a><a data-view="knowledge"><span>?</span>制度知识库</a><a data-view="closure"><span>↻</span>整改闭环</a></aside>
-<section class="workspace"><div class="crumb">首页 / <b id="crumbName">主审驾驶舱</b> / <span id="crumbProject">工程项目</span></div><main class="content">
-<div class="toolbar"><label>组织层级</label><select id="orgLevel"></select><label>组织名称</label><select id="orgName"></select><label>项目状态</label><select><option>竣工结算</option><option>在建</option><option>已完工未结算</option></select><label>风险等级</label><select id="riskFilter"><option value="">全部</option><option>高风险</option><option>中风险</option></select><button class="primary" id="runBtn">执行分析</button><button id="resetBtn">恢复演示数据</button><div class="grow" id="lastAnalysis">最后分析：-</div></div>
-<section class="view active" id="view-overview"><div class="stats" id="stats"></div><section class="section"><div class="section-head"><h2>当前审计任务</h2><span class="hint" id="taskHint"></span><button class="action primary" data-jump="issues">查看疑点</button></div><div class="process"><div class="step done"><div class="dot">1</div>资料接入</div><div class="step done"><div class="dot">2</div>字段识别</div><div class="step done"><div class="dot">3</div>结构化建模</div><div class="step done"><div class="dot">4</div>三表比对</div><div class="step current"><div class="dot">5</div>专家与主审</div><div class="step"><div class="dot">6</div>整改销号</div></div></section><section class="section"><div class="section-head"><h2>九宫格战略风控判定</h2><span class="hint" id="nineGridHint"></span></div><div class="section-body" id="nineGridDisplay"></div></section><div class="grid2"><section class="section"><div class="section-head red"><h2>高优先级疑点</h2><span class="hint">按风险金额和证据强度排序</span></div><div class="table-scroll"><table class="data-table"><thead><tr><th>风险</th><th>事项</th><th>金额</th><th>状态</th></tr></thead><tbody id="overviewIssues"></tbody></table></div></section><section class="section"><div class="section-head"><h2>全生命周期模型</h2><span class="hint">事前、事中、事后联动</span></div><div class="section-body lifecycle" id="lifecycleMini"></div></section></div></section>
-<section class="view" id="view-import"><section class="section"><div class="section-head"><h2>资料接入与字段识别</h2><span class="hint">招标、合同、签证、竣工、结算和台账资料统一入池</span></div><div class="section-body"><form class="upload-zone" id="uploadForm"><input type="file" name="files" id="fileInput" multiple accept=".pdf,.docx,.xls,.xlsx,.csv,.json,.zip"><button class="primary" type="submit">上传并识别</button><button type="button" id="sapBtn">模拟系统抓取</button><span class="muted">已接入资料：<b id="docCount">0</b> 份</span></form><div class="doc-list" id="documents"></div></div></section><section class="section"><div class="section-head"><h2>上传识别结果</h2><span class="hint">字段抽取、表格行和资料包清单</span></div><div class="section-body" id="uploadResults"><div class="empty">暂无本次上传记录</div></div></section></section>
-<section class="view" id="view-model"><section class="section"><div class="section-head"><h2>统一结构模型</h2><span class="hint">将多文档映射到项目、清单、证据、费项和生命周期状态</span></div><div class="section-body grid2"><div><table class="data-table"><tbody id="modelDocs"></tbody></table></div><div><table class="data-table"><tbody id="modelItems"></tbody></table></div></div></section><section class="section"><div class="section-head red"><h2>模型摘要</h2><span class="hint">结构化输出供规则引擎、报告和接口复用</span></div><div class="section-body" id="modelSummary"></div></section><section class="section"><div class="section-head"><h2>模型链串联</h2><span class="hint" id="modelChainHint"></span></div><div class="section-body" id="modelChainDisplay"></div></section><section class="section"><div class="section-head"><h2>全生命周期模型库</h2><span class="hint" id="modelCatalogHint"></span></div><div class="table-scroll"><table class="data-table"><thead><tr><th>编号</th><th>阶段</th><th>类型</th><th>业务端</th><th>模型名称</th><th>输入资料</th><th>输出</th><th>命中</th><th>金额</th></tr></thead><tbody id="modelCatalogRows"></tbody></table></div></section></section>
-<section class="view" id="view-compare"><section class="section"><div class="section-head"><h2>工程量 / 单价 / 金额三表比对</h2><span class="hint">招标文件 vs 合同 vs 实际完成 vs 结算</span></div><div class="section-body" id="compareTable"></div></section><section class="section"><div class="section-head red"><h2>金额归集核对</h2><span class="hint">合同价、变更累计、结算金额、支付和实际完成量</span></div><div class="table-scroll"><table class="data-table"><tbody id="amountTable"></tbody></table></div></section></section>
-<section class="view" id="view-issues"><section class="section"><div class="section-head red"><h2>疑点中心</h2><span class="hint" id="issueHint"></span><button class="action" id="exportBtn">导出疑点清单</button></div><div class="table-scroll"><table class="data-table"><thead><tr><th>序号</th><th>阶段</th><th>风险</th><th>疑点事项</th><th>来源对象</th><th>金额</th><th>专家状态</th><th>主审状态</th><th>操作</th></tr></thead><tbody id="issueRows"></tbody></table></div></section><section class="section"><div class="section-head red"><h2>疑点详情：<span id="issueTitle">-</span></h2><span class="hint">编号：<b id="issueId">-</b>　金额：<b id="issueAmount">-</b></span><button class="action danger" id="assignBtn">发起专家核查</button></div><div class="section-body issue-detail"><div><div class="summary-box" id="issueSummary"></div><div class="summary-box" id="analysisSummary"></div><div class="note" id="analysisReason"></div><div class="remediation-actions"><button class="primary" id="analysisKnowledgeBtn">查制度</button><button id="analysisConferenceBtn">启动圆桌</button></div><div class="note" id="analysisPrompt"></div><div class="note" id="issueRule"></div></div><div class="evidence-list" id="evidenceList"></div></div></section></section>
-<section class="view" id="view-experts"><section class="section"><div class="section-head"><h2>问题智能分析模型</h2><span class="hint">每个疑点先形成画像，再决定是否进入圆桌</span><button class="action primary" id="launchConferenceBtn">启动圆桌</button></div><div class="section-body grid3" id="agentRoster"></div></section><section class="section"><div class="section-head"><h2>背景专家知识库</h2><span class="hint">造价、商务、履约、招采供应链、财务、法务按问题调用</span></div><div class="section-body grid3" id="expertRoster"></div></section><section class="section"><div class="section-head red"><h2>会谈议程</h2><span class="hint" id="agentTaskHint"></span></div><div class="section-body" id="agentTasks"></div></section><section class="section"><div class="section-head red"><h2>专家圆桌会谈</h2><span class="hint" id="expertHint"></span></div><div class="section-body" id="expertOpinions"></div></section></section>
-<section class="view" id="view-review"><section class="section"><div class="section-head red"><h2>主审人工复核</h2><span class="hint">智能体只形成证据和建议，正式认定由主审裁量</span></div><div class="section-body review-panel"><div><table class="data-table"><tbody id="reviewIssue"></tbody></table></div><div><label class="radio-line"><input type="radio" name="decision" value="confirm" checked> 确认疑点，纳入审计报告</label><label class="radio-line"><input type="radio" name="decision" value="evidence"> 退回补充资料</label><label class="radio-line"><input type="radio" name="decision" value="site"> 转现场核验，暂不认定</label><textarea id="reviewNote" placeholder="主审意见：填写核减依据、补证要求和责任部门"></textarea><br><br><button class="primary" id="decisionBtn">保存主审结论</button></div></div></section></section>
-<section class="view" id="view-report"><div class="grid2"><section class="section"><div class="section-head"><h2>报告草稿</h2><span class="hint" id="reportStatus"></span><button class="action primary" id="reportExportBtn">下载报告</button></div><div class="section-body" id="reportBody"></div></section><section class="section"><div class="section-head red"><h2>经营决策分析</h2><span class="hint">风险金额、现金流和优先动作</span></div><div class="section-body"><div class="chart" id="riskChart"></div><div class="answer" id="managementNotes"></div></div></section></div><section class="section"><div class="section-head red"><h2>九大管理归因与战略审计定论链</h2><span class="hint" id="crossModelHint"></span></div><div class="section-body" id="crossModelDisplay"></div></section><section class="section"><div class="section-head red"><h2>费用归集与虚假结算模型</h2><span class="hint">索赔、奖罚、管理费和历史风险特征</span></div><div class="section-body grid2"><div id="costAggregation"></div><div id="fraudAssessment"></div></div></section><section class="section"><div class="section-head"><h2>全生命周期预警与问题模型</h2><span class="hint">从事前合同到事后结算整改</span></div><div class="section-body lifecycle" id="lifecycleFull"></div></section><section class="section"><div class="section-head red"><h2>虚假结算训练与模型命中</h2><span class="hint">历史样本学习、特征权重和当前项目命中</span></div><div class="section-body" id="trainingSummary"></div></section></section>
-<section class="view" id="view-knowledge"><section class="section"><div class="section-head"><h2>制度知识库问询机器人</h2><span class="hint">关联当前疑点、制度依据和补证建议</span></div><div class="section-body"><div class="chat"><input id="question" placeholder="例如：签证缺少项目商务经理签认能否计入结算？"><button class="primary" id="askBtn">检索制度</button></div><div class="answer" id="answer">请选择或输入制度问题。</div></div></section><section class="section"><div class="section-head"><h2>制度条款库</h2><span class="hint">Demo 本地知识条目</span></div><div class="section-body" id="knowledgeList"></div></section></section>
-<section class="view" id="view-closure"><section class="section"><div class="section-head green"><h2>审计问题整改闭环</h2><span class="hint">主审确认后自动生成整改任务和留痕记录</span></div><div class="section-body closure" id="closureSteps"></div></section><section class="section"><div class="section-head green"><h2>整改任务台账</h2><span class="hint" id="remediationSummary"></span></div><div class="table-scroll"><table class="data-table"><thead><tr><th>整改编号</th><th>关联疑点</th><th>责任部门</th><th>状态</th><th>金额</th><th>整改动作</th><th>最近留痕</th><th>操作</th></tr></thead><tbody id="remediationRows"></tbody></table></div></section></section>
-<div class="note">演示环境：模拟数据。规则、金额和偏差由后端确定性代码计算，最终审计意见必须由主审人工确认。</div></main></section></div><div class="toast" id="toast"></div>
-<div id="viewerModal" style="display:none;position:fixed;inset:0;background:rgba(11,14,20,0.75);backdrop-filter:blur(4px);z-index:9999;">
-  <div style="width:94vw;height:94vh;margin:3vh auto;background:#fff;display:flex;flex-direction:column;border-radius:8px;box-shadow:0 25px 70px rgba(0,0,0,0.4),0 10px 24px rgba(0,0,0,0.2);overflow:hidden;">
-    <div style="height:52px;padding:0 20px;background:linear-gradient(135deg,#0F172A 0%,#1E293B 100%);color:#fff;display:flex;align-items:center;justify-content:space-between;flex:0 0 auto;border-bottom:1px solid #334155;">
-      <b id="viewerTitle" style="font-size:15px;font-weight:600;letter-spacing:0.3px;">原件与结构化双栏穿透核对</b>
-      <div><span style="color:#94A3B8;margin-right:18px;font-size:12px;" id="viewerHint"></span><button onclick="closeViewer()" style="background:transparent;border:0;color:#F1F5F9;font-size:22px;cursor:pointer;padding:0;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:4px;transition:background .15s;">✕</button></div>
+    <!-- ============================================================================
+         顶部导航栏
+         ============================================================================ -->
+    <nav class="top-nav">
+        <div class="nav-container">
+            <div class="logo">
+                <div class="logo-icon">中建</div>
+                <span>结算审核智能体</span>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item active" data-view="overview">主审驾驶舱</li>
+                <li class="nav-item" data-view="import">资料接入</li>
+                <li class="nav-item" data-view="model">结构化模型</li>
+                <li class="nav-item" data-view="compare">三表穿透</li>
+                <li class="nav-item" data-view="issues">疑点追踪</li>
+                <li class="nav-item" data-view="experts">专家会审</li>
+                <li class="nav-item" data-view="review">主审复核</li>
+                <li class="nav-item" data-view="report">报告生成</li>
+                <li class="nav-item" data-view="knowledge">知识库</li>
+                <li class="nav-item" data-view="closure">整改销号</li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- ============================================================================
+         主内容区域
+         ============================================================================ -->
+    <main class="main-content">
+        <!-- ========================================================================
+             视图1：主审驾驶舱
+             ======================================================================== -->
+        <div class="view-container active" id="view-overview">
+            <!-- 全局筛选器 -->
+            <div class="filter-panel">
+                <div class="filter-group">
+                    <label class="filter-label">组织层级</label>
+                    <select class="filter-select" id="orgLevel">
+                        <option value="">全部</option>
+                        <option value="集团">集团</option>
+                        <option value="分公司">分公司</option>
+                        <option value="项目部">项目部</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">组织名称</label>
+                    <select class="filter-select" id="orgName">
+                        <option value="">全部</option>
+                        <option value="华东分公司">华东分公司</option>
+                        <option value="杭州项目部">杭州项目部</option>
+                        <option value="南京项目部">南京项目部</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">项目状态</label>
+                    <select class="filter-select" id="projStatus">
+                        <option value="">全部</option>
+                        <option value="在建">在建</option>
+                        <option value="已竣工">已竣工</option>
+                        <option value="结算中">结算中</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">风险等级</label>
+                    <select class="filter-select" id="riskFilter">
+                        <option value="">全部</option>
+                        <option value="高危">高危</option>
+                        <option value="中等">中等</option>
+                        <option value="低风险">低风险</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 统计卡片 -->
+            <div class="stats-grid">
+                <div class="stat-card danger">
+                    <div class="stat-label">待主审复核疑点</div>
+                    <div class="stat-value" id="stat-pending">0<span class="stat-unit">项</span></div>
+                    <div class="stat-trend up">↑ 较昨日 +3</div>
+                </div>
+                <div class="stat-card warning">
+                    <div class="stat-label">整改中事项</div>
+                    <div class="stat-value" id="stat-remediation">0<span class="stat-unit">项</span></div>
+                    <div class="stat-trend">锁定SAP支付中</div>
+                </div>
+                <div class="stat-card success">
+                    <div class="stat-label">本月已销号</div>
+                    <div class="stat-value" id="stat-closed">0<span class="stat-unit">项</span></div>
+                    <div class="stat-trend down">↓ 整改效率提升12%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">累计审减金额</div>
+                    <div class="stat-value" id="stat-amount">0<span class="stat-unit">万元</span></div>
+                    <div class="stat-trend">占申报金额的5.2%</div>
+                </div>
+            </div>
+
+            <!-- 双专题定论看板 -->
+            <div class="chain-container">
+                <!-- 专题一：商务与结算合规四链 -->
+                <div class="chain-panel commercial">
+                    <div class="chain-title">📋 专题一：商务与结算合规四链（项目部/执行层）</div>
+                    <div class="chain-list">
+                        <div class="chain-item" data-chain="1">
+                            <div class="chain-item-name">链1: 先干后谈与未定价变更责任错配链</div>
+                            <div class="chain-item-meta">
+                                <span>涉及模型: 2.4 + 1.3 + 2.2</span>
+                                <span class="tag red">3项高危</span>
+                            </div>
+                        </div>
+                        <div class="chain-item" data-chain="2">
+                            <div class="chain-item-name">链2: 结算滞后与虚盈实亏现金失血链</div>
+                            <div class="chain-item-meta">
+                                <span>涉及模型: 1.2 + 1.1 + 3.1 + 3.2</span>
+                                <span class="tag amber">2项中等</span>
+                            </div>
+                        </div>
+                        <div class="chain-item" data-chain="3">
+                            <div class="chain-item-name">链3: 证据治理与六大证据链断点阻断链</div>
+                            <div class="chain-item-meta">
+                                <span>涉及模型: 证据计数 >= 2 + 模型 2.2 + 1.4</span>
+                                <span class="tag blue">1项预警</span>
+                            </div>
+                        </div>
+                        <div class="chain-item" data-chain="4">
+                            <div class="chain-item-name">链4: 层层转包与影子分包价格失控链</div>
+                            <div class="chain-item-meta">
+                                <span>涉及模型: 3.3 + 2.1 + 2.3 + 2.5</span>
+                                <span class="tag green">正常</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 专题二：公司治理与战略风控五链 -->
+                <div class="chain-panel governance">
+                    <div class="chain-title">🔒 专题二：公司治理与战略风控五链（分公司/战略层）</div>
+                    <div class="chain-list">
+                        <div class="chain-item" data-chain="5">
+                            <div class="chain-item-name">链5: 盲目垫资与履约惯性击穿止损红线链</div>
+                            <div class="chain-item-meta">
+                                <span>涉及模型: 3.3 + 1.1</span>
+                                <span class="tag red">1项高危</span>
+                            </div>
+                        </div>
+                        <div class="chain-item" data-chain="6">
+                            <div class="chain-item-name">链6: "三重一大"决策虚化与审批失守链</div>
+                            <div class="chain-item-meta">
+                                <span>涉及模型: 2.1 + 纪要穿透</span>
+                                <span class="tag amber">待核实</span>
+                            </div>
+                        </div>
+                        <div class="chain-item" data-chain="7">
+                            <div class="chain-item-name">链7: 诉讼判决瞒报与财务收入虚增失真链</div>
+                            <div class="chain-item-meta">
+                                <span>涉及模型: 1.4 + 诉讼链</span>
+                                <span class="tag green">未发现</span>
+                            </div>
+                        </div>
+                        <div class="chain-item" data-chain="8">
+                            <div class="chain-item-name">链8: 供应链贴息反噬与真实效益侵蚀链</div>
+                            <div class="chain-item-meta">
+                                <span>涉及模型: 3.2 + 3.1</span>
+                                <span class="tag blue">监测中</span>
+                            </div>
+                        </div>
+                        <div class="chain-item" data-chain="9">
+                            <div class="chain-item-name">链9: "时空穿越"人证分离与现场安全悬空链</div>
+                            <div class="chain-item-meta">
+                                <span>涉及模型: 时空碰撞 + 模型 2.4</span>
+                                <span class="tag green">正常</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================================================
+             视图2：资料接入（RPA自动化）
+             ======================================================================== -->
+        <div class="view-container" id="view-import">
+            <div class="discussion-container">
+                <div class="chain-title">📥 资料接入与RPA自动化</div>
+                <div class="stats-grid" style="margin-top: 20px;">
+                    <div class="stat-card">
+                        <div class="stat-label">待接入合同</div>
+                        <div class="stat-value">3<span class="stat-unit">份</span></div>
+                    </div>
+                    <div class="stat-card success">
+                        <div class="stat-label">本月已接入</div>
+                        <div class="stat-value">28<span class="stat-unit">份</span></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">OCR识别率</div>
+                        <div class="stat-value">98.5<span class="stat-unit">%</span></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">自动化覆盖率</div>
+                        <div class="stat-value">85<span class="stat-unit">%</span></div>
+                    </div>
+                </div>
+
+                <div class="data-table" style="margin-top: 24px;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>文件名称</th>
+                                <th>文件类型</th>
+                                <th>页数</th>
+                                <th>上传时间</th>
+                                <th>识别状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>浦东新区医院项目-合同主文本.pdf</td>
+                                <td><span class="tag blue">合同</span></td>
+                                <td>36页</td>
+                                <td>2024-08-20 09:15</td>
+                                <td><span class="tag green">已识别</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" onclick="openModal('modal-split-screen')">穿透核对</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>钱塘江大桥维修-签证单0812.pdf</td>
+                                <td><span class="tag amber">签证</span></td>
+                                <td>5页</td>
+                                <td>2024-08-21 14:32</td>
+                                <td><span class="tag green">已识别</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" onclick="openModal('modal-split-screen')">穿透核对</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================================================
+             视图3：结构化模型
+             ======================================================================== -->
+        <div class="view-container" id="view-model">
+            <div class="discussion-container">
+                <div class="chain-title">🔢 11个核心模型 - 逻辑框架 + 规则判断</div>
+
+                <div style="margin-top: 24px;">
+                    <h3 style="margin-bottom: 16px; color: var(--text-secondary);">维度一：对上确权（4个模型）</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">模型 1.1 确权率偏离度</div>
+                            <div class="stat-value">85.2<span class="stat-unit">%</span></div>
+                            <div class="stat-trend down">✓ 正常范围</div>
+                        </div>
+                        <div class="stat-card warning">
+                            <div class="stat-label">模型 1.2 久竣未结时间亏损</div>
+                            <div class="stat-value">215<span class="stat-unit">天</span></div>
+                            <div class="stat-trend up">⚠ 超过180天红线</div>
+                        </div>
+                        <div class="stat-card danger">
+                            <div class="stat-label">模型 1.3 签证滞后/索赔失脱</div>
+                            <div class="stat-value">5<span class="stat-unit">项</span></div>
+                            <div class="stat-trend up">涉及金额280万</div>
+                        </div>
+                        <div class="stat-card success">
+                            <div class="stat-label">模型 1.4 法院判决收入冲销</div>
+                            <div class="stat-value">0<span class="stat-unit">项</span></div>
+                            <div class="stat-trend">✓ 未发现诉讼风险</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 32px;">
+                    <h3 style="margin-bottom: 16px; color: var(--text-secondary);">维度二：对下分包（5个模型）</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card warning">
+                            <div class="stat-label">模型 2.1 超合同5%三重一大</div>
+                            <div class="stat-value">8.2<span class="stat-unit">%</span></div>
+                            <div class="stat-trend up">⚠ 需补三重一大纪要</div>
+                        </div>
+                        <div class="stat-card danger">
+                            <div class="stat-label">模型 2.2 包干禁止签证</div>
+                            <div class="stat-value">3<span class="stat-unit">项</span></div>
+                            <div class="stat-trend up">建议审减50万</div>
+                        </div>
+                        <div class="stat-card warning">
+                            <div class="stat-label">模型 2.3 材料超耗150%扣款</div>
+                            <div class="stat-value">2<span class="stat-unit">项</span></div>
+                            <div class="stat-trend up">应扣款35万</div>
+                        </div>
+                        <div class="stat-card danger">
+                            <div class="stat-label">模型 2.4 未签先进场时序倒置</div>
+                            <div class="stat-value">1<span class="stat-unit">项</span></div>
+                            <div class="stat-trend up">责任错配风险</div>
+                        </div>
+                        <div class="stat-card success">
+                            <div class="stat-label">模型 2.5 代工未扣负结算</div>
+                            <div class="stat-value">0<span class="stat-unit">项</span></div>
+                            <div class="stat-trend">✓ 代工扣款正常</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 32px;">
+                    <h3 style="margin-bottom: 16px; color: var(--text-secondary);">维度三：业财穿透（3个模型）</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card warning">
+                            <div class="stat-label">模型 3.1 竣工存货未报耗</div>
+                            <div class="stat-value">120<span class="stat-unit">万</span></div>
+                            <div class="stat-trend up">虚增利润</div>
+                        </div>
+                        <div class="stat-card warning">
+                            <div class="stat-label">模型 3.2 隐性贴息侵蚀利润</div>
+                            <div class="stat-value">85<span class="stat-unit">万</span></div>
+                            <div class="stat-trend up">需还原真实利润</div>
+                        </div>
+                        <div class="stat-card danger">
+                            <div class="stat-label">模型 3.3 招采付款倒挂</div>
+                            <div class="stat-value">+150<span class="stat-unit">万</span></div>
+                            <div class="stat-trend up">⚠ 启动强制止损</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================================================
+             视图4：三表穿透比对（双轨并列）
+             ======================================================================== -->
+        <div class="view-container" id="view-compare">
+            <div class="discussion-container">
+                <div class="chain-title">📊 三表穿透比对 - 双轨并列体现</div>
+
+                <div class="comparison-layout" style="margin-top: 24px;">
+                    <!-- 左侧：对上业主收入轨 -->
+                    <div class="rail-panel">
+                        <div class="rail-title owner">
+                            ⬆️ 对上业主收入轨（确权量价）
+                        </div>
+                        <div class="amount-display" id="owner-amounts">
+                            <div class="amount-row">
+                                <span class="amount-label">合同金额</span>
+                                <span class="amount-value">8500.00万</span>
+                            </div>
+                            <div class="amount-row">
+                                <span class="amount-label">业主确权金额</span>
+                                <span class="amount-value" style="color: var(--success);">7240.00万</span>
+                            </div>
+                            <div class="amount-row">
+                                <span class="amount-label">确权偏离</span>
+                                <span class="amount-value" style="color: var(--danger);">-1260.00万</span>
+                            </div>
+                        </div>
+
+                        <div class="data-table" style="margin-top: 16px;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>清单项</th>
+                                        <th>确权量</th>
+                                        <th>确权单价</th>
+                                        <th>确权金额</th>
+                                        <th>证据数</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>土方开挖</td>
+                                        <td>12,500 m³</td>
+                                        <td>85.50</td>
+                                        <td>106.88万</td>
+                                        <td><span class="tag green">3</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>混凝土浇筑</td>
+                                        <td>8,200 m³</td>
+                                        <td>650.00</td>
+                                        <td>533.00万</td>
+                                        <td><span class="tag amber">2</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 右侧：对下分包成本轨 -->
+                    <div class="rail-panel">
+                        <div class="rail-title subcontractor">
+                            ⬇️ 对下分包成本轨（申报量价/超耗扣款）
+                        </div>
+                        <div class="amount-display" id="sub-amounts">
+                            <div class="amount-row">
+                                <span class="amount-label">合同金额</span>
+                                <span class="amount-value">5500.00万</span>
+                            </div>
+                            <div class="amount-row">
+                                <span class="amount-label">分包申报金额</span>
+                                <span class="amount-value" style="color: var(--warning);">5875.00万</span>
+                            </div>
+                            <div class="amount-row">
+                                <span class="amount-label">成本偏离</span>
+                                <span class="amount-value" style="color: var(--danger);">+375.00万</span>
+                            </div>
+                            <div class="amount-row" style="background: var(--success-bg); border-left: 3px solid var(--success);">
+                                <span class="amount-label"><strong>预计利润</strong></span>
+                                <span class="amount-value" style="color: var(--success);">1365.00万 (18.9%)</span>
+                            </div>
+                        </div>
+
+                        <div class="data-table" style="margin-top: 16px;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>清单项</th>
+                                        <th>申报量</th>
+                                        <th>申报单价</th>
+                                        <th>申报金额</th>
+                                        <th>审减建议</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>土方开挖</td>
+                                        <td>13,000 m³</td>
+                                        <td>90.00</td>
+                                        <td>117.00万</td>
+                                        <td><span class="tag amber">超量5%</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>临时签证项</td>
+                                        <td>1 项</td>
+                                        <td>50.00万</td>
+                                        <td>50.00万</td>
+                                        <td><span class="tag red">包干禁止</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================================================
+             视图5：疑点追踪中心
+             ======================================================================== -->
+        <div class="view-container" id="view-issues">
+            <div class="discussion-container">
+                <div class="chain-title">🔍 疑点追踪中心 - 真问题候选包</div>
+
+                <div class="data-table" style="margin-top: 24px;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>疑点编号</th>
+                                <th>时段</th>
+                                <th>风险等级</th>
+                                <th>疑点描述</th>
+                                <th>涉及金额</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="issues-tbody">
+                            <tr>
+                                <td colspan="7" style="text-align: center; color: var(--text-muted);">
+                                    加载中...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================================================
+             视图6：专家会审（统一互动讨论层）
+             ======================================================================== -->
+        <div class="view-container" id="view-experts">
+            <div class="discussion-container">
+                <div class="chain-title">💬 统一互动讨论层 - 常态RAG问答 + 按需专家升级</div>
+
+                <div class="discussion-layout">
+                    <!-- 左侧：对话区 -->
+                    <div class="chat-panel">
+                        <div class="chat-messages" id="chat-messages">
+                            <div class="chat-message assistant">
+                                您好！我是结算审核智能助手。您可以向我询问制度法规、合同条款、审计标准等问题。如需深度讨论，可点击下方【进入专家讨论】拉起专家圆桌。
+                            </div>
+                        </div>
+
+                        <div class="chat-input-group">
+                            <input type="text" class="chat-input" id="chat-input"
+                                   placeholder="请输入您的问题，如：包干合同能否调整价款？">
+                            <button class="btn btn-primary" onclick="sendChatMessage()">发送</button>
+                            <button class="btn btn-secondary" onclick="upgradeToExpertPanel()">
+                                进入专家讨论
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 右侧：上下文面板 -->
+                    <div class="context-panel">
+                        <div class="context-section">
+                            <div class="context-title">📋 当前疑点上下文</div>
+                            <div class="context-content">
+                                <strong>疑点：</strong>江宁区住宅配套项目-临时签证项超包干合同<br>
+                                <strong>模型：</strong>2.2 包干禁止签证与清单外项剔除<br>
+                                <strong>金额：</strong>50万元<br>
+                                <strong>时段：</strong><span class="tag orange">事中</span>
+                            </div>
+                        </div>
+
+                        <div class="context-section">
+                            <div class="context-title">📊 三表量价差额</div>
+                            <div class="context-content">
+                                <strong>业主确权：</strong>未涉及此项<br>
+                                <strong>分包申报：</strong>50万元<br>
+                                <strong>合同约定：</strong>包干价5500万，不含签证调整
+                            </div>
+                        </div>
+
+                        <div class="context-section">
+                            <div class="context-title">📖 相关制度条款</div>
+                            <div class="context-content">
+                                <strong>GB50500-2013 第3.2.1条：</strong><br>
+                                固定总价合同在约定的风险范围内合同价款不予调整...<br><br>
+                                <strong>建市[2019]51号文：</strong><br>
+                                包干合同原则上不得增加合同外项目...
+                            </div>
+                        </div>
+
+                        <div class="context-section">
+                            <div class="context-title">🔗 证据切片</div>
+                            <div class="context-content">
+                                <span class="tag red">证据不足</span> 缺少业主变更指令<br>
+                                <span class="tag amber">证据待补</span> 现场签证单未盖业主章
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 专家圆桌讨论区（按需显示） -->
+                <div id="expert-panel" style="display: none; margin-top: 24px; padding-top: 24px; border-top: 2px solid var(--line);">
+                    <h3 style="margin-bottom: 16px; color: var(--text-primary);">🎯 专家圆桌讨论</h3>
+                    <div class="expert-grid">
+                        <div class="expert-card">
+                            <div class="expert-name">
+                                商务专家
+                                <span class="expert-badge">商务管理</span>
+                            </div>
+                            <div class="expert-opinion">
+                                从商务角度看，该项目采用固定总价包干合同，合同条款明确约定"包干价不予调整"。分包方提出的临时签证项未经业主变更指令，且不在原合同清单范围内，<strong>建议全额审减50万元</strong>。
+                            </div>
+                        </div>
+
+                        <div class="expert-card" style="border-left-color: var(--warning);">
+                            <div class="expert-name">
+                                法律专家
+                                <span class="expert-badge">法律合规</span>
+                            </div>
+                            <div class="expert-opinion">
+                                根据《民法典》第806条及GB50500-2013规范，固定总价合同在约定风险范围内不得调整。本案签证单缺少业主盖章确认，<strong>法律效力存疑</strong>。建议分包方补充完整证据链，否则不予认可。
+                            </div>
+                        </div>
+
+                        <div class="expert-card" style="border-left-color: var(--success);">
+                            <div class="expert-name">
+                                财务专家
+                                <span class="expert-badge">财务核算</span>
+                            </div>
+                            <div class="expert-opinion">
+                                从财务角度分析，该项目已按包干价入账，若追加50万元将导致成本超预算。且该项未获业主确权，<strong>增加成本的同时不增加收入</strong>，将直接侵蚀项目利润。建议启动整改并锁定后续付款。
+                            </div>
+                        </div>
+
+                        <div class="expert-card" style="border-left-color: var(--info);">
+                            <div class="expert-name">
+                                现场专家
+                                <span class="expert-badge">工程技术</span>
+                            </div>
+                            <div class="expert-opinion">
+                                经现场核实，该临时项确实发生，但<strong>未在事前履行变更审批程序</strong>，属于"先干后谈"。根据合同约定，分包方应承担未及时办理签证的后果。建议按包干价执行，审减比例60%，剩余40%待补充证据后再议。
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 20px; padding: 16px; background: var(--primary-soft); border-radius: 6px; border-left: 3px solid var(--primary);">
+                        <strong style="color: var(--primary-deep);">专家共识意见：</strong><br>
+                        综合四位专家意见，建议<strong>审减60%（30万元）</strong>，剩余40%（20万元）要求分包方在15天内补充以下证据：<br>
+                        1. 业主变更指令或会议纪要<br>
+                        2. 完整的现场签证单（含业主盖章）<br>
+                        3. 实际工程量的第三方测量报告<br>
+                        逾期未补充，则全额审减。
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================================================
+             视图7：主审公文复核
+             ======================================================================== -->
+        <div class="view-container" id="view-review">
+            <div class="discussion-container">
+                <div class="chain-title">✍️ 主审公文复核 - 三段式裁决结论</div>
+
+                <div class="data-table" style="margin-top: 24px;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>疑点编号</th>
+                                <th>疑点描述</th>
+                                <th>专家意见</th>
+                                <th>涉及金额</th>
+                                <th>主审裁决</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>ISS-2024-001</td>
+                                <td><strong>模型2.2</strong> 包干禁止签证-临时签证项</td>
+                                <td><span class="tag green">专家已会审</span></td>
+                                <td>50.00万</td>
+                                <td><span class="tag amber">待裁决</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" onclick="openReviewModal()">
+                                        立即裁决
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>ISS-2024-002</td>
+                                <td><strong>模型3.3</strong> 招采付款倒挂-超确权付款</td>
+                                <td><span class="tag green">专家已会审</span></td>
+                                <td>150.00万</td>
+                                <td><span class="tag amber">待裁决</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" onclick="openReviewModal()">
+                                        立即裁决
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="margin-top: 24px; padding: 20px; background: var(--panel); border-radius: var(--radius); box-shadow: var(--shadow);">
+                    <h3 style="margin-bottom: 16px;">主审裁决模板（三段式）</h3>
+
+                    <div style="margin-bottom: 16px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-secondary);">
+                            第一段：事实认定
+                        </label>
+                        <textarea style="width: 100%; padding: 12px; border: 1px solid var(--line); border-radius: 6px; font-size: 14px; min-height: 100px;" placeholder="经核实，该项目采用固定总价包干合同，合同金额5500万元..."></textarea>
+                    </div>
+
+                    <div style="margin-bottom: 16px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-secondary);">
+                            第二段：法规依据
+                        </label>
+                        <textarea style="width: 100%; padding: 12px; border: 1px solid var(--line); border-radius: 6px; font-size: 14px; min-height: 100px;" placeholder="根据《建设工程施工合同示范文本》第13条及GB50500-2013第3.2.1条规定..."></textarea>
+                    </div>
+
+                    <div style="margin-bottom: 16px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-secondary);">
+                            第三段：裁决结论
+                        </label>
+                        <textarea style="width: 100%; padding: 12px; border: 1px solid var(--line); border-radius: 6px; font-size: 14px; min-height: 100px;" placeholder="综上所述，本次审计认定该临时签证项不符合包干合同约定，审减金额30万元..."></textarea>
+                    </div>
+
+                    <div style="display: flex; gap: 12px;">
+                        <button class="btn btn-success">✓ 认定并转入整改</button>
+                        <button class="btn btn-secondary">需补充证据</button>
+                        <button class="btn btn-danger">不予认定</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================================================
+             视图8：报告生成
+             ======================================================================== -->
+        <div class="view-container" id="view-report">
+            <div class="discussion-container">
+                <div class="chain-title">📄 审计报告与经营分析</div>
+
+                <div class="stats-grid" style="margin-top: 24px;">
+                    <div class="stat-card">
+                        <div class="stat-label">本期审计项目</div>
+                        <div class="stat-value">3<span class="stat-unit">个</span></div>
+                    </div>
+                    <div class="stat-card danger">
+                        <div class="stat-label">发现疑点总数</div>
+                        <div class="stat-value">12<span class="stat-unit">项</span></div>
+                    </div>
+                    <div class="stat-card warning">
+                        <div class="stat-label">累计审减金额</div>
+                        <div class="stat-value">285<span class="stat-unit">万元</span></div>
+                    </div>
+                    <div class="stat-card success">
+                        <div class="stat-label">整改完成率</div>
+                        <div class="stat-value">75<span class="stat-unit">%</span></div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 24px; display: flex; gap: 12px;">
+                    <button class="btn btn-primary">生成完整报告</button>
+                    <button class="btn btn-secondary">生成摘要报告</button>
+                    <button class="btn btn-secondary">生成管理层报告</button>
+                    <button class="btn btn-secondary">导出Excel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================================================
+             视图9：知识库
+             ======================================================================== -->
+        <div class="view-container" id="view-knowledge">
+            <div class="discussion-container">
+                <div class="chain-title">📚 制度知识库 - Dify RAG检索</div>
+
+                <div style="margin-top: 24px;">
+                    <div class="chat-input-group">
+                        <input type="text" class="chat-input"
+                               placeholder="搜索制度法规、合同条款、审计标准...">
+                        <button class="btn btn-primary">🔍 检索</button>
+                    </div>
+                </div>
+
+                <div class="data-table" style="margin-top: 24px;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>文档类型</th>
+                                <th>文档名称</th>
+                                <th>发文机关</th>
+                                <th>生效日期</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="tag blue">国家标准</span></td>
+                                <td>GB50500-2013 建设工程工程量清单计价规范</td>
+                                <td>住建部</td>
+                                <td>2013-07-01</td>
+                                <td><button class="btn btn-sm btn-secondary">查看</button></td>
+                            </tr>
+                            <tr>
+                                <td><span class="tag blue">部门规章</span></td>
+                                <td>建市[2019]51号 建设工程计价管理办法</td>
+                                <td>住建部</td>
+                                <td>2019-03-01</td>
+                                <td><button class="btn btn-sm btn-secondary">查看</button></td>
+                            </tr>
+                            <tr>
+                                <td><span class="tag amber">集团制度</span></td>
+                                <td>中建集团结算审核管理办法（2023版）</td>
+                                <td>中建集团</td>
+                                <td>2023-01-01</td>
+                                <td><button class="btn btn-sm btn-secondary">查看</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================================================
+             视图10：整改销号（凭证卡口）
+             ======================================================================== -->
+        <div class="view-container" id="view-closure">
+            <div class="discussion-container">
+                <div class="chain-title">🔐 整改销号 - 凭证卡口与财务支付锁联动</div>
+
+                <div class="data-table" style="margin-top: 24px;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>疑点编号</th>
+                                <th>疑点描述</th>
+                                <th>审减金额</th>
+                                <th>整改状态</th>
+                                <th>支付锁状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>ISS-2024-001</td>
+                                <td><strong>模型2.2</strong> 包干禁止签证</td>
+                                <td>30.00万</td>
+                                <td><span class="tag amber">整改中</span></td>
+                                <td><span class="tag red">已锁死SAP支付</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-success" onclick="openClosureModal('ISS-2024-001')">
+                                        提交销号
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>ISS-2024-003</td>
+                                <td><strong>模型2.3</strong> 材料超耗150%</td>
+                                <td>35.00万</td>
+                                <td><span class="tag green">已销号</span></td>
+                                <td><span class="tag green">已解锁</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-secondary" disabled>
+                                        已完成
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="margin-top: 24px; padding: 20px; background: var(--danger-bg); border-radius: var(--radius); border-left: 3px solid var(--danger);">
+                    <strong style="color: var(--danger);">⚠️ 凭证卡口铁律</strong><br>
+                    所有整改事项销号必须提供以下凭证之一，严禁无凭证销号：<br>
+                    1. 冲账凭证号（财务已冲销）<br>
+                    2. 退款水单号（分包已退款）<br>
+                    3. 扣款通知书（已从后续结算扣除）<br>
+                    销号成功后，系统自动解除财务支付锁，恢复SAP付款权限。
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ============================================================================
+         弹窗：双栏穿透核对窗（原件 vs 结构化）
+         ============================================================================ -->
+    <div class="modal-overlay" id="modal-split-screen">
+        <div class="modal-container" style="width: 90vw;">
+            <div class="modal-header">
+                <div class="modal-title">📄 原件与结构化双栏穿透核对</div>
+                <button class="modal-close" onclick="closeModal('modal-split-screen')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="split-screen">
+                    <!-- 左屏：原始PDF高保真展示 -->
+                    <div class="screen-panel">
+                        <div class="screen-title">原始文件（PDF/扫描件）</div>
+                        <div class="pdf-viewer">
+                            <div style="text-align: center;">
+                                <div style="font-size: 48px; margin-bottom: 12px;">📄</div>
+                                <div style="color: var(--text-secondary);">
+                                    原始PDF渲染区域<br>
+                                    <small>支持BBOX坐标高亮选框</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 右屏：结构化键值对 -->
+                    <div class="screen-panel">
+                        <div class="screen-title">结构化数据（PaddleOCR识别）</div>
+                        <div class="structured-data">
+                            <div class="kv-pair">
+                                <div class="kv-key">合同编号</div>
+                                <div class="kv-value">
+                                    <input type="text" value="C2024001" />
+                                </div>
+                                <div class="kv-confidence">98.5%</div>
+                            </div>
+                            <div class="kv-pair">
+                                <div class="kv-key">合同金额</div>
+                                <div class="kv-value">
+                                    <input type="text" value="85,000,000.00" />
+                                </div>
+                                <div class="kv-confidence">99.2%</div>
+                            </div>
+                            <div class="kv-pair">
+                                <div class="kv-key">签订日期</div>
+                                <div class="kv-value">
+                                    <input type="text" value="2023-03-15" />
+                                </div>
+                                <div class="kv-confidence">97.8%</div>
+                            </div>
+                            <div class="kv-pair">
+                                <div class="kv-key">付款方式</div>
+                                <div class="kv-value">
+                                    <input type="text" value="按进度付款" />
+                                </div>
+                                <div class="kv-confidence">95.3%</div>
+                            </div>
+                            <div class="kv-pair">
+                                <div class="kv-key">承包方式</div>
+                                <div class="kv-value">
+                                    <input type="text" value="固定总价包干" />
+                                </div>
+                                <div class="kv-confidence">96.7%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px; display: flex; gap: 12px; justify-content: flex-end;">
+                    <button class="btn btn-secondary" onclick="closeModal('modal-split-screen')">取消</button>
+                    <button class="btn btn-success">✓ 确认无误，入库</button>
+                    <button class="btn btn-danger">审减此项</button>
+                </div>
+            </div>
+        </div>
     </div>
-    <div style="flex:1;display:flex;gap:1px;background:var(--line);overflow:hidden;min-height:0;">
-      <div style="flex:0 0 54%;background:#0F172A;padding:20px;overflow:auto;display:flex;justify-content:center;align-items:flex-start;">
-        <div id="viewerOriginal" style="position:relative;background:#fff;box-shadow:0 8px 24px rgba(0,0,0,0.4);width:100%;max-width:620px;aspect-ratio:210/297;border:1px solid #d5dee8;"></div>
-      </div>
-      <div style="flex:1;background:#F8FAFC;padding:24px 28px;overflow:auto;border-left:1px solid #CBD5E1;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #E2E8F0;">
-          <h3 style="margin:0;font-size:15px;color:#0B0E14;font-weight:600;">结构化解析要素</h3>
-          <span id="viewerConfidence" style="font-size:12px;color:#158464;font-weight:500;"></span>
+
+    <!-- ============================================================================
+         弹窗：整改销号凭证录入
+         ============================================================================ -->
+    <div class="modal-overlay" id="modal-closure">
+        <div class="modal-container" style="width: 600px;">
+            <div class="modal-header">
+                <div class="modal-title">🔐 整改销号 - 凭证录入</div>
+                <button class="modal-close" onclick="closeModal('modal-closure')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div style="padding: 20px; background: var(--danger-bg); border-radius: 6px; margin-bottom: 20px;">
+                    <strong style="color: var(--danger);">⚠️ 凭证卡口提醒</strong><br>
+                    必须录入有效凭证号才能完成销号，严禁无凭证销号！
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">
+                        凭证类型 <span style="color: var(--danger);">*</span>
+                    </label>
+                    <select id="proof-type" class="filter-select" style="width: 100%;">
+                        <option value="">请选择凭证类型</option>
+                        <option value="voucher">冲账凭证</option>
+                        <option value="refund">退款水单</option>
+                        <option value="deduction">扣款通知书</option>
+                    </select>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">
+                        凭证号 <span style="color: var(--danger);">*</span>
+                    </label>
+                    <input type="text" id="proof-number" class="chat-input" style="width: 100%;"
+                           placeholder="请输入凭证号，如：JZ202408-001" />
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">
+                        备注说明
+                    </label>
+                    <textarea id="proof-remark" style="width: 100%; padding: 12px; border: 1px solid var(--line); border-radius: 6px; font-size: 14px; min-height: 80px;"
+                              placeholder="请简要说明整改措施与凭证来源..."></textarea>
+                </div>
+
+                <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                    <button class="btn btn-secondary" onclick="closeModal('modal-closure')">取消</button>
+                    <button class="btn btn-success" onclick="submitClosure()">✓ 确认销号</button>
+                </div>
+            </div>
         </div>
-        <table class="data-table" id="viewerFields" style="margin-bottom:20px;"></table>
-        <div style="margin:20px 0 12px;padding-top:16px;border-top:1px solid #E2E8F0;">
-          <h4 style="margin:0 0 10px;color:#1E293B;font-size:13px;font-weight:600;">签章 / 状态识别</h4>
-          <div id="viewerStamps"></div>
-        </div>
-        <div id="viewerIssueNote" style="margin-top:16px;padding:10px 14px;background:#FFF0F2;border:1px solid #FECDD3;border-left:3px solid #C73745;color:#881337;font-size:12px;line-height:1.6;display:none;border-radius:3px;"></div>
-        <div style="margin-top:24px;display:flex;gap:10px;">
-          <button class="primary" onclick="saveCorrection()" style="height:36px;padding:0 18px;">保存人工校对</button>
-          <button onclick="markAsEvidence()" style="height:36px;padding:0 18px;background:#F8FAFC;border:1px solid #94A3B8;color:#475569;">采纳为审计证据</button>
-        </div>
-      </div>
     </div>
-  </div>
-</div>
-<script>
-const pageNames={overview:"主审驾驶舱",import:"资料接入",model:"结构化建模",compare:"三表比对",issues:"疑点中心",experts:"专家会审",review:"主审复核",report:"报告与经营分析",knowledge:"制度知识库",closure:"整改闭环"};let state=null,currentIssueId=null,llmExpertCache={},llmExpertLoadingIssue=null,issueAnalysisCache={},issueAnalysisLoadingIssue=null;
-const $=id=>document.getElementById(id),esc=v=>String(v??"").replace(/[&<>"']/g,s=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[s])),money=v=>"¥"+Number(v||0).toLocaleString("zh-CN",{maximumFractionDigits:0}),pct=v=>v===null||v===undefined?"-":(Number(v)*100).toFixed(2)+"%";
-function tag(t){t=String(t||"");let c=t.includes("高")||t.includes("待主审")?"red":t.includes("中")||t.includes("待")||t.includes("预警")?"amber":t.includes("已")?"green":"blue";return `<span class="tag ${c}">${esc(t)}</span>`}function toast(t){let e=$("toast");e.textContent=t;e.style.display="block";setTimeout(()=>e.style.display="none",2400)}function api(u,o={}){return fetch(u,o).then(async r=>{let d=await r.json().catch(()=>({error:"接口格式异常"}));if(!r.ok)throw Error(d.error||"请求失败");return d})}
-function setView(n){n=pageNames[n]?n:"overview";document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id==="view-"+n));document.querySelectorAll("[data-view]").forEach(a=>a.classList.toggle("active",a.dataset.view===n));$("crumbName").textContent=pageNames[n];history.replaceState(null,"","#"+n);window.scrollTo({top:0,behavior:"smooth"})}function issue(){return(state?.issues||[]).find(x=>x.id===currentIssueId)||state?.issues?.[0]}
-function clearExpertCache(){llmExpertCache={};llmExpertLoadingIssue=null}
-function expertPayload(id){return llmExpertCache[id]||null}
-function clearIssueAnalysisCache(){issueAnalysisCache={};issueAnalysisLoadingIssue=null}
-function issueAnalysisPayload(id){return issueAnalysisCache[id]||null}
-function expertFocus(name){return({"造价专家":"清单计价、工程量、单价与核减","商务专家":"合同、变更、索赔与审批链","履约专家":"现场收方、验收、移交与完成量","招采供应链专家":"材料损耗、市场参考价与供应链对账","财务专家":"支付、成本归集、奖罚与现金流","法务专家":"授权、程序效力与责任边界"})[name]||"审计事实、证据链与风险控制"}
-async function loadIssueAnalysis(issueId,refresh=false){
-if(!issueId)return;
-if(issueAnalysisLoadingIssue===issueId&&!refresh)return;
-issueAnalysisLoadingIssue=issueId;
-try{
-let payload=await api(`/api/settlement-demo/issue-analysis/${encodeURIComponent(issueId)}${refresh?"?refresh=1":""}`);
-issueAnalysisCache[issueId]=payload;
-if(currentIssueId===issueId)renderIssueDetail();
-if(currentIssueId===issueId)renderExperts();
-}catch(e){
-if(currentIssueId===issueId)toast(e.message);
-}finally{
-if(issueAnalysisLoadingIssue===issueId)issueAnalysisLoadingIssue=null;
-}}
-async function loadExpertOpinions(issueId,refresh=false){
-if(!issueId)return;
-if(llmExpertLoadingIssue===issueId&&!refresh)return;
-llmExpertLoadingIssue=issueId;
-try{
-let payload=await api(`/api/settlement-demo/expert-opinions/${encodeURIComponent(issueId)}${refresh?"?refresh=1":""}`);
-llmExpertCache[issueId]=payload;
-if(currentIssueId===issueId)renderExperts();
-}catch(e){
-if(currentIssueId===issueId){
-toast(e.message);
-let fallback=(state.expert_opinions||{})[issueId]||[];
-llmExpertCache[issueId]={issue_id:issueId,source:"fallback",model:"-",cache_key:"",generated_at:"",opinions:fallback};
-renderExperts();
-}
-}finally{
-if(llmExpertLoadingIssue===issueId)llmExpertLoadingIssue=null;
-}}
-function renderStats(){let s=state.summary;$("stats").innerHTML=[["待处理疑点",s.issue_count,"alert"],["高风险疑点",s.high_risk_count,"alert"],["风险金额",money(s.risk_amount),"alert"],["资料识别",s.document_count+" 份",""],["支付超前",money(s.payment_gap),s.payment_gap>0?"alert":"good"]].map(x=>`<div class="stat ${x[2]}"><small>${x[0]}</small><strong>${x[1]}</strong></div>`).join("")}
-function renderOrg(){let a=state.organizations||[];$("orgLevel").innerHTML=a.map(x=>`<option>${esc(x.level)}</option>`).join("");$("orgName").innerHTML=a.map(x=>`<option>${esc(x.name)}</option>`).join("")}
-function renderOverview(){let p=state.project,s=state.summary;$("analyst").textContent=state.meta.analyst||"主审：审计部";$("crumbProject").textContent=p.name;$("lastAnalysis").textContent=`数据源：${state.active_data_source||"内置演示数据"}　最后分析：${state.meta.last_analysis||"-"}`;$("sideIssueCount").textContent=s.issue_count;$("taskHint").textContent=`${p.name} / ${p.phase} / 合同 ${p.id}`;$("overviewIssues").innerHTML=state.issues.slice(0,4).map(x=>`<tr><td>${tag(x.risk)}</td><td><b>${esc(x.title)}</b><br><small>${esc(x.rule)}</small></td><td class="money">${money(x.amount)}</td><td>${tag(state.decisions?.[x.id]?.decision==="confirm"?"已入报告":x.chief_status)}</td></tr>`).join("");$("lifecycleMini").innerHTML=(state.lifecycle_findings||[]).map(lifeCard).join("")}
-function renderDocs(){let d=state.project.documents||[];$("docCount").textContent=d.length;$("documents").innerHTML=d.map(x=>`<div class="doc"><b>${esc(x.type)} · ${esc(x.name)}</b><p class="muted">${esc(x.location)}</p>${tag(x.status)} <span class="muted">字段 ${esc(x.fields)}</span></div>`).join("");let u=state.uploads||[];$("uploadResults").innerHTML=u.length?u.slice().reverse().map(x=>`<div class="doc"><b>${esc(x.name)}</b><p class="muted">业务类型：${esc(x.document_type||x.type||"-")}　格式：${esc(x.type||"-")}　行数：${esc(x.fields?.row_count??x.fields?.file_count??"-")}　文本：${esc(x.fields?.text_length??"-")}</p>${(x.warnings||[]).map(tag).join(" ")}</div>`).join(""):"<div class=\"empty\">暂无本次上传记录</div>"}
-function renderModel(){let m=state.structured_model||{};let docs=m.documents||[];let items=m.items||[];let lifecycle=m.lifecycle_models||[];$("modelDocs").innerHTML=`<tr><th colspan="2">文档模型</th></tr>`+docs.map(x=>`<tr><td>${esc(x.type)}</td><td><b>${esc(x.name)}</b><br><small>${esc(x.location)} / ${esc(x.version)} / ${esc(x.status)}</small></td></tr>`).join("");$("modelItems").innerHTML=`<tr><th colspan="2">清单子目模型</th></tr>`+items.map(x=>`<tr><td><b>${esc(x.item_code)}</b><br><small>${esc(x.unit)} / ${esc(x.location)}</small></td><td>${esc(x.name)}<br><small>合同 ${money(x.contract?.unit_price)} · 结算 ${money(x.settlement?.unit_price)} · 证据 ${esc(x.evidence_count)}</small></td></tr>`).join("");$("modelSummary").innerHTML=`<div class="grid3"><div class="doc"><b>项目</b><p>${esc(m.project?.name||"-")}</p><small>${esc(m.project?.phase||"-")} / ${esc(m.project?.status||"-")}</small></div><div class="doc"><b>文档数</b><p>${docs.length}</p><small>统一识别后的结构化文档</small></div><div class="doc"><b>历史风险特征</b><p>${esc(m.fraud_assessment?.score||0)} / 100</p><small>${esc(m.fraud_assessment?.level||"-")}</small></div></div><div class="grid2" style="margin-top:10px"><div class="doc"><b>生命周期模型</b><p>${esc(m.summary?.lifecycle_count||0)} 个</p><small>事前 / 事中 / 事后模型块</small></div><div class="doc"><b>历史模式</b><p>${esc(m.summary?.historical_pattern_count||0)} 个</p><small>用于虚假结算识别的特征库</small></div></div><div class="table-scroll" style="margin-top:10px"><table class="data-table"><thead><tr><th>阶段</th><th>模型类型</th><th>领域</th><th>数量</th><th>金额</th><th>事项</th></tr></thead><tbody>${lifecycle.map(x=>`<tr><td>${esc(x.phase)}</td><td>${esc(x.model_type)}</td><td>${esc(x.domain)}</td><td>${esc(x.count)}</td><td class="money">${money(x.amount)}</td><td>${esc((x.titles||[]).join(" / "))}</td></tr>`).join("")}</tbody></table></div><div class="note">阈值：工程量 ${pct(m.thresholds?.quantity_deviation_pct)}，单价 ${pct(m.thresholds?.unit_price_deviation_pct)}，市场 ${pct(m.thresholds?.market_deviation_pct)}，重复计费重合 ${pct(m.thresholds?.duplicate_overlap_pct)}</div>`}
-function renderModelCatalog(){let c=state.audit_model_catalog||{},s=c.summary||{},models=c.models||[];$("modelCatalogHint").textContent=`模型 ${s.model_count||0} 个 / 已命中 ${s.active_model_count||0} 个 / 业务端 ${s.business_end_count||0} 个`;$("modelCatalogRows").innerHTML=models.map(x=>`<tr><td>${esc(x.id)}</td><td>${tag(x.phase)}</td><td>${tag(x.model_type)}</td><td>${esc(x.business_end)}</td><td><b>${esc(x.name)}</b><br><small>${esc(x.rule)}</small></td><td>${esc((x.input_documents||[]).join(" / "))}</td><td>${esc(x.output)}</td><td>${tag((x.hit_count||0)+" 项")}</td><td class="money">${money(x.risk_amount)}</td></tr>`).join("")}
-function renderCompare(){let r=state.comparisons||[];$("compareTable").innerHTML=`<div class="compare-row compare-head"><div>清单子目</div><div>招标</div><div>合同</div><div>实际完成</div><div>结算与偏差</div></div>`+r.map(x=>`<div class="compare-row"><div><b>${esc(x.item_code)}</b><br>${esc(x.name)}<br><small>${esc(x.location)}</small></div><div>量 ${x.bid.quantity} ${esc(x.unit)}<br>价 ${money(x.bid.unit_price)}<br>合价 ${money(x.bid.amount)}</div><div>量 ${x.contract.quantity} ${esc(x.unit)}<br>价 ${money(x.contract.unit_price)}<br>合价 ${money(x.contract.amount)}</div><div>量 ${x.actual.quantity} ${esc(x.unit)}<br>合价 ${money(x.actual.amount)}</div><div>量 ${x.settlement.quantity} ${esc(x.unit)} / ${pct(x.quantity_deviation_settlement_vs_actual)}<br>价 ${money(x.settlement.unit_price)} / ${pct(x.unit_price_deviation_settlement_vs_contract)}<br>合价 ${money(x.settlement.amount)}</div></div>`).join("");let s=state.summary;$("amountTable").innerHTML=`<tr><th>合同总价</th><td>${money(s.contract_total)}</td><th>批准变更累计</th><td>${money(s.approved_change_total)}</td></tr><tr><th>结算申报金额</th><td>${money(s.settlement_total)}</td><th>实际完成量认证金额</th><td>${money(s.actual_certified_total)}</td></tr><tr><th>已支付金额</th><td>${money(s.paid_total)}</td><th>支付超前风险</th><td class="money">${money(s.payment_gap)}</td></tr>`}
-function renderIssues(){let f=$("riskFilter").value,a=(state.issues||[]).filter(x=>!f||x.risk===f),summary=state.analysis_summary||{};if(!currentIssueId&&a[0])currentIssueId=a[0].id;$("issueHint").textContent=`智能体已发现 ${state.summary.issue_count} 项异常，保留主审 ${summary.screened_count||0} 项，先观察 ${summary.filtered_count||0} 项，当前显示 ${a.length} 项`;$("issueRows").innerHTML=a.map((x,i)=>`<tr class="${x.id===currentIssueId?"active":""}"><td>${String(i+1).padStart(2,"0")}</td><td>${esc(x.phase)}</td><td>${tag(x.risk)}</td><td><b>${esc(x.title)}</b><br><small>${esc(x.judgement)}</small></td><td>${esc((x.source_objects||[]).slice(0,3).join(" / "))}</td><td class="money">${money(x.amount)}</td><td>${tag(x.expert_status)}</td><td>${tag(state.decisions?.[x.id]?.decision==="confirm"?"已入报告":x.chief_status)}</td><td><span class="click" data-issue="${esc(x.id)}">查看</span></td></tr>`).join("");document.querySelectorAll("[data-issue]").forEach(e=>e.onclick=()=>{currentIssueId=e.dataset.issue;renderAll();setView("issues")});renderIssueDetail()}
-function renderIssueDetail(){
-let x=issue();
-if(!x)return;
-$("issueTitle").textContent=x.title;
-$("issueId").textContent=x.id;
-$("issueAmount").textContent=money(x.amount);
-$("issueSummary").innerHTML=`<b>智能体规则判断：</b>${esc(x.judgement)}<br><b>处理建议：</b>${esc(x.suggestion)}`;
-let pkg=issueAnalysisPayload(x.id);
-if(!pkg&&issueAnalysisLoadingIssue!==x.id){
-$("analysisSummary").innerHTML="<div class=\"empty\">问题分析包生成中</div>";
-$("analysisReason").textContent="";
-$("analysisPrompt").textContent="";
-loadIssueAnalysis(x.id);
-}else if(pkg){
-let screening=pkg.screening||{};
-let conference=pkg.conference||{};
-$("analysisSummary").innerHTML=`<b>问题分析包：</b>${esc(pkg.analysis?.issue_type||x.category||"-")}<br><b>过滤结果：</b>${tag(screening.screen_label||"待分析")}　<b>评分：</b>${esc(screening.screen_score||0)}<br><b>建议模式：</b>${esc(conference.mode||"知识库问答优先")}<br><b>建议角色：</b>${esc((conference.suggested_roles||[]).join(" / ")||"按需调用")}`;
-$("analysisReason").textContent=`过滤说明：${screening.screen_reason||"先做问题分析再决定是否进入专家会谈"}`;
-$("analysisPrompt").textContent=`知识问答提示：${pkg.knowledge_prompt||""}`;
-}else{
-$("analysisSummary").innerHTML="<div class=\"empty\">问题分析包暂未生成</div>";
-$("analysisReason").textContent="";
-$("analysisPrompt").textContent="";
-}
-$("issueRule").textContent="判定规则："+x.rule;
-let docKey=VIEWER_MAP[x.id]||"";
-let openBtn=docKey?`<button class="primary" style="margin:6px 0;" onclick="openViewer('${docKey}')">⇱ 穿透查看原始文件</button>`:"";
-$("evidenceList").innerHTML=openBtn+(x.evidence||[]).map(e=>`<div class="paper"><h3>${esc(e.document)}</h3><p>${esc(e.location)}</p><span class="mark">${esc(e.fact)}</span></div>`).join("");
-renderReview()
-}
-function renderExperts(){
-let x=issue();
-let analysisPkg=issueAnalysisPayload(x?.id);
-let analysis=analysisPkg?.analysis||{};
-let screening=analysisPkg?.screening||{};
-let conferenceRec=analysisPkg?.conference||{};
-let payload=expertPayload(x?.id);
-let conference=payload?.conference||payload?.opinions||[];
-let source=payload?.source||"";
-$("agentRoster").innerHTML=x?`<div class="doc"><b>${esc(analysis.issue_type||x.category||"问题画像")}</b>${tag(analysis.knowledge_mode||"问题分析")}<p>${esc(analysis.analysis_focus||x.judgement||"围绕证据链、合同条款和金额偏差展开分析。")}</p></div><div class="doc"><b>关键关键词</b><p>${esc((analysis.keywords||[]).join(" / ")||x.rule||"-")}</p><small>用于拉起对应背景专家</small></div><div class="doc"><b>过滤结论</b><p>${tag(screening.screen_label||"待分析")}</p><small>${esc(screening.screen_reason||"先完成问题分析过滤。")}</small></div>`:"<div class=\"empty\">请选择一个问题项进入会谈。</div>";
-$("expertRoster").innerHTML=(state.experts||[]).map(e=>`<div class="doc"><b>${esc(e.name)}</b><p>${esc(e.domain)}</p><small>${esc(expertFocus(e.name))}</small><br>${tag(e.availability)}</div>`).join("");
-if(x&&analysisPkg){
-$("agentTaskHint").textContent=`${conferenceRec.mode||"知识库问答优先"} / ${analysis.question_slots?.length||4} 个问题`;
-$("agentTasks").innerHTML=`<table class="data-table"><thead><tr><th>问题</th><th>说明</th></tr></thead><tbody>${(analysis.question_slots||["问题本质是什么","证据链缺口在哪里","是否存在程序或合同效力风险","主审下一步应如何处理"]).map((q,i)=>`<tr><td>${String(i+1).padStart(2,"0")}</td><td>${esc(q)}</td></tr>`).join("")}</tbody></table>`;
-}else{
-$("agentTaskHint").textContent="";
-$("agentTasks").innerHTML="<div class=\"empty\">请先选择一个问题项。</div>";
-}
-$("expertHint").textContent=x?.title?`${x.title}${source?` · ${source==="ollama"?"LLM 专家会谈":"兜底会谈"}`:" · 待启动圆桌"}`:"";
-if(conference.length){
-$("expertOpinions").innerHTML=`${conference.map(e=>`<div class="expert-card"><h3>${esc(e.expert||e.speaker||"专家")} ${tag(e.status)} ${e.stance?tag(e.stance):""} ${source==="ollama"?'<span class="tag green">LLM</span>':''}</h3><p><b>事实：</b>${esc(e.fact)}</p><p><b>依据：</b>${esc(e.basis)}</p><p><b>判断：</b>${esc(e.judgement)}</p><p><b>风险：</b>${esc(e.risk)}　<b>建议：</b>${esc(e.recommendation)}</p></div>`).join("")}<div class="expert-card"><h3>圆桌结论 ${payload?.conclusion?.stance?tag(payload.conclusion.stance):""}</h3><p><b>聚焦：</b>${esc(payload?.conclusion?.focus||analysis.analysis_focus||"")}</p><p><b>下一步：</b>${esc(payload?.conclusion?.next_step||"请主审结合证据和制度裁量。")}</p></div>`;
-}else{
-$("expertOpinions").innerHTML=x?`<div class="empty">圆桌会谈尚未启动。${conferenceRec.should_open?"建议点击“启动圆桌”进入专家讨论。":"当前事项建议先做制度问答。"}</div>`:"<div class=\"empty\">当前问题尚未生成圆桌会谈</div>";
-}}
-function renderReview(){let x=issue();if(!x)return;$("reviewIssue").innerHTML=`<tr><th>疑点</th><td>${esc(x.title)}</td></tr><tr><th>风险</th><td>${tag(x.risk)}</td></tr><tr><th>涉及金额</th><td class="money">${money(x.amount)}</td></tr><tr><th>依据</th><td>${esc(x.rule)}</td></tr><tr><th>建议</th><td>${esc(x.suggestion)}</td></tr>`;$("reviewNote").value=state.decisions?.[x.id]?.note||""}
-function lifeCard(x){return`<div class="life-card ${x.risk==="高风险"?"high":"medium"}">${tag(x.phase)} ${tag(x.model_type)}<b>${esc(x.title)}</b><p class="muted">${esc(x.domain)} / ${money(x.amount)}</p><p>${esc(x.suggestion)}</p></div>`}
-function renderReport(){let r=state.report,c=state.cost_aggregation||{} ,f=state.fraud_assessment||{};$("reportStatus").textContent=r.status;$("reportBody").innerHTML=`<h3>${esc(r.title)}</h3><p>疑点 ${r.issue_count} 项，规则测算风险金额 <b class="money">${money(r.risk_amount)}</b>；主审已确认 ${r.confirmed_count} 项，入报告金额 <b class="money">${money(r.confirmed_amount)}</b>。</p><table class="data-table"><tbody>${r.sections.map(x=>`<tr><td>${esc(x)}</td><td>${tag("草稿")}</td></tr>`).join("")}</tbody></table>`;let max=Math.max(...state.issues.map(x=>x.amount),1);$("riskChart").innerHTML=state.issues.map((x,i)=>`<div class="bar-line"><span>${esc(x.title.slice(0,9))}</span><div class="bar"><i class="${i===0?"red":i<3?"amber":"green"}" style="width:${Math.max(6,x.amount/max*100)}%"></i></div><b>${money(x.amount)}</b></div>`).join("");$("managementNotes").innerHTML=(r.management_notes||[]).map(x=>`<p>${esc(x)}</p>`).join("");$("costAggregation").innerHTML=`<table class="data-table"><tbody><tr><th>合同总价</th><td>${money(c.contract_total)}</td></tr><tr><th>批准变更</th><td>${money(c.approved_change_total)}</td></tr><tr><th>索赔申报 / 已批</th><td>${money(c.claims_settlement)} / ${money(c.claims_approved)}</td></tr><tr><th>未批准进入结算</th><td class="money">${money(c.unapproved_claim_amount)}</td></tr><tr><th>奖励 / 罚款应扣</th><td>${money(c.reward_amount)} / ${money(c.penalty_amount)}</td></tr><tr><th>罚款未扣</th><td class="money">${money(c.penalty_omission)}</td></tr><tr><th>管理费超额</th><td class="money">${money(c.management_fee_excess)}</td></tr></tbody></table>`;$("fraudAssessment").innerHTML=`<h3>历史虚假结算特征模型</h3><p>评分：<b class="money">${esc(f.score||0)}</b> / 100　${tag(f.level||"低风险")}</p><p>${esc(f.explanation||"暂无命中")}</p>${(f.hits||[]).map(x=>`<div class="expert-card"><b>${esc(x.name)}</b>　${tag("+"+x.weight+"分")}<p class="muted">${esc(x.evidence)}</p></div>`).join("")}`;$("lifecycleFull").innerHTML=(state.lifecycle_findings||[]).map(lifeCard).join("")}
-function renderTraining(){let t=state.false_settlement_training||{},features=t.features||[],catalog=state.audit_model_catalog||{},models=(catalog.models||[]).filter(x=>x.hit_count>0);$("trainingSummary").innerHTML=`<div class="grid3"><div class="doc"><b>训练样本</b><p>${esc(t.sample_count||0)} 条</p><small>正样本 ${esc(t.positive_cases||0)} / 负样本 ${esc(t.negative_cases||0)}</small></div><div class="doc"><b>模型阈值</b><p>${esc(t.threshold||0)} 分</p><small>${esc(t.training_status||"-")}</small></div><div class="doc"><b>学习特征</b><p>${esc((t.top_features||[]).join(" / "))}</p><small>${esc(t.algorithm||"-")}</small></div></div><div class="grid2" style="margin-top:10px"><div><table class="data-table"><thead><tr><th>特征</th><th>权重</th><th>正/负样本</th><th>置信度</th></tr></thead><tbody>${features.map(x=>`<tr><td><b>${esc(x.name)}</b><br><small>${esc(x.description)}</small></td><td>${esc(x.base_weight)} → <b>${esc(x.learned_weight)}</b></td><td>${esc(x.positive_hits)} / ${esc(x.negative_hits)}</td><td>${pct(x.confidence)}</td></tr>`).join("")}</tbody></table></div><div><table class="data-table"><thead><tr><th>命中模型</th><th>阶段</th><th>金额</th></tr></thead><tbody>${models.map(x=>`<tr><td><b>${esc(x.name)}</b><br><small>${esc(x.business_end)}</small></td><td>${tag(x.phase)} ${tag(x.model_type)}</td><td class="money">${money(x.risk_amount)}</td></tr>`).join("")}</tbody></table></div></div><div class="note">${esc(t.training_note||"")}</div>`}
-function renderKnowledge(){let pkg=issueAnalysisPayload(currentIssueId);if(currentIssueId&&!pkg&&issueAnalysisLoadingIssue!==currentIssueId)loadIssueAnalysis(currentIssueId);$("knowledgeList").innerHTML=`${pkg?`<div class="doc"><b>当前问题包</b><p>${esc(pkg.issue?.title||"")}</p><small>${esc(pkg.analysis?.issue_type||"")}${pkg.screening?` / ${esc(pkg.screening.screen_label||"")}`:""}</small><p class="muted">${esc(pkg.knowledge_prompt||"")}</p></div>`:""}${(state.knowledge||[]).map(x=>`<div class="expert-card"><h3>${esc(x.title)} <span class="muted">${esc(x.basis)}</span></h3><p>${esc(x.answer)}</p></div>`).join("")}`}
-function renderClosure(){let rem=state.remediation_tasks||{},sum=rem.summary||{},tasks=rem.tasks||[],ok=tasks.length>0;$("closureSteps").innerHTML=(state.closure||[]).map((x,i)=>{let s=x.status,c=i===0?"done":"";if(i===2&&ok){s="已形成问题";c="done"}else if(i===3&&sum.verified>0){s="已进入验证";c="done"}else if(i===4&&sum.closed>0){s="已销号";c="done"}else if(i===1)c="current";return`<div class="closure-item ${c}"><b>${esc(x.stage)}</b><small>${esc(s)}<br>${esc(x.owner)} ${esc(x.time||"")}</small></div>`}).join("");$("remediationSummary").textContent=`任务 ${sum.total||0} 项 / 已销号 ${sum.closed||0} 项 / 未销号金额 ${money(sum.open_amount||0)}`;$("remediationRows").innerHTML=tasks.length?tasks.map(t=>`<tr><td>${esc(t.task_id)}</td><td><b>${esc(t.title)}</b><br><small>${esc(t.issue_id)} / ${esc(t.category)}</small></td><td>${esc(t.owner)}</td><td>${tag(t.status)}</td><td class="money">${money(t.amount)}</td><td>${esc((t.actions||[]).join("；"))}</td><td>${esc(t.latest_update?.note||t.chief_note||"")}${t.latest_update?.time?`<br><small>${esc(t.latest_update.time)} ${esc(t.latest_update.operator||"")}</small>`:""}</td><td><div class="remediation-actions"><button data-rem="${esc(t.issue_id)}" data-status="整改中">整改中</button><button data-rem="${esc(t.issue_id)}" data-status="整改验证">验证</button><button class="primary" data-rem="${esc(t.issue_id)}" data-status="已销号">销号</button></div></td></tr>`).join(""):"<tr><td colspan=\"8\"><div class=\"empty\">主审确认疑点后，系统将自动生成整改任务。</div></td></tr>";document.querySelectorAll("[data-rem]").forEach(e=>e.onclick=()=>updateRemediation(e.dataset.rem,e.dataset.status))}
-async function updateRemediation(issueId,status){try{state=await api("/api/settlement-demo/remediation",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({issue_id:issueId,status,note:`主审更新为${status}`})});renderAll();toast("整改闭环状态已更新")}catch(e){toast(e.message)}}
-function renderNineGrid(){let g=state.nine_grid||{};$("nineGridHint").textContent=`总分 ${g.total_score||0} / 最高风险 ${g.max_risk_level||"-"} / 命中 ${g.hit_cell_count||0} 格`;let rows=g.rows||[];$("nineGridDisplay").innerHTML=rows.length?`<table class="data-table"><thead><tr><th>行</th><th>列</th><th>单元格</th><th>命中</th><th>分值</th><th>风险</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.row_label)}</td><td>${esc(r.col_label)}</td><td><b>${esc(r.cell_name)}</b></td><td>${r.hit?tag("命中"):tag("未命中")}</td><td>${esc(r.score)}</td><td>${tag(r.risk_level)}</td></tr>`).join("")}</tbody></table>`:"<div class=\"empty\">九宫格判定尚未生成</div>"}
-function renderModelChain(){let m=state.model_chain||{};$("modelChainHint").textContent=`${m.steps?.length||0} 步流水线`;let steps=m.steps||[];$("modelChainDisplay").innerHTML=steps.length?`<table class="data-table"><thead><tr><th>步骤</th><th>标题</th><th>输入</th><th>输出</th><th>状态</th></tr></thead><tbody>${steps.map(s=>`<tr><td>${esc(s.step)}</td><td><b>${esc(s.title)}</b><br><small>${esc(s.description)}</small></td><td>${esc((s.inputs||[]).join(", "))}</td><td>${esc((s.outputs||[]).join(", "))}</td><td>${tag(s.status)}</td></tr>`).join("")}</tbody></table>`:"<div class=\"empty\">模型链尚未生成</div>"}
-function renderCrossModel(){let h=state.cross_model_hints||{};$("crossModelHint").textContent=`${h.total_chains||0} 条链 / 命中 ${h.matched_chains?.length||0} 条 / 未命中 ${h.unmatched_chains?.length||0} 条`;let sections=h.sections||[];let chains=h.chains||[];$("crossModelDisplay").innerHTML=sections.length?sections.map(sec=>{let secChains=chains.filter(c=>c.section===sec.section);return`<div style="margin-bottom:20px;"><h3 style="color:#102842;margin:0 0 12px;padding-bottom:8px;border-bottom:2px solid var(--blue);">${esc(sec.section)} (${sec.count}链)</h3>${secChains.map(c=>`<div class="expert-card" style="border-left:4px solid ${c.all_hit?"var(--red)":"var(--line)"};"><h3>${esc(c.chain_id)} ${esc(c.name)} ${tag(c.severity)} ${c.all_hit?'<span class="tag red">全命中</span>':''}</h3><p><b>演进路径：</b>${esc(c.path)}</p><p><b>业务机理：</b>${esc(c.description)}</p><div style="background:#f8fbff;border:1px solid #d9e3ed;padding:10px;margin:10px 0;"><p style="margin:4px 0;"><b>定性判断：</b>${esc(c.conclusion?.qualitative||"-")}</p><p style="margin:4px 0;"><b>量化支撑：</b>${esc(c.conclusion?.quantitative||"-")}</p><p style="margin:4px 0;"><b>管理定论：</b>${esc(c.conclusion?.management||"-")}</p></div><p><b>命中模型：</b>${esc((c.model_names||[]).join(" → "))}</p><p><b>命中金额：</b><span class="money">${money(c.hit_amount||0)}</span> / 命中 ${c.hit_count||0} 项 / 处理：${esc(c.action||"-")}</p></div>`).join("")}</div>`}).join(""):"<div class=\"empty\">九大管理归因链尚未生成</div>"}
-function renderAll(){renderOrg();renderStats();renderOverview();renderDocs();renderModel();renderModelChain();renderNineGrid();renderModelCatalog();renderCompare();renderIssues();renderExperts();renderReport();renderCrossModel();renderTraining();renderKnowledge();renderClosure()}
-const VIEWER_MAP={"post-quantity-001":"BG-018","post-change-001":"ZQ-023","post-price-001":"NF-026"};let currentViewerDoc=null;
-async function openViewer(docKey){try{currentViewerDoc=await api("/api/settlement-demo/viewer/"+docKey);renderViewer();$("viewerModal").style.display="block"}catch(e){toast(e.message)}}
-function closeViewer(){$("viewerModal").style.display="none";currentViewerDoc=null}
-function renderViewer(){let d=currentViewerDoc;if(!d)return;$("viewerTitle").textContent="📄 原件与结构化双栏穿透核对："+d.title;$("viewerHint").textContent=d.page_hint||"";let avg=(d.fields.reduce((s,f)=>s+f.confidence,0)/d.fields.length*100).toFixed(1);$("viewerConfidence").textContent="平均置信度 "+avg+"%";$("viewerOriginal").innerHTML=d.fields.map((f,i)=>`<div class="ov-field" data-i="${i}" style="left:${f.bbox.x}%;top:${f.bbox.y}%;width:${f.bbox.w}%;height:${f.bbox.h}%;">${esc(f.value)}</div>`).join("")+`<div class="ov-stamp">扫描件原件（演示）</div>`;$("viewerFields").innerHTML=`<tr><th>字段</th><th>识别值</th><th>置信度</th><th></th></tr>`+d.fields.map((f,i)=>`<tr class="ov-row" data-f="${i}" onclick="highlightField(${i})"><th>${esc(f.key)}</th><td><input id="ovVal${i}" value="${esc(f.value)}" style="width:100%;"></td><td>${(f.confidence*100).toFixed(1)}%</td><td>${f.status==="warn"?'<span class="tag red">存疑</span>':'<span class="tag green">正常</span>'}</td></tr>`).join("");$("viewerStamps").innerHTML=d.stamps.map(s=>`<span class="tag ${s.state==="缺失"?"red":"green"}">${esc(s.name)}：${esc(s.state)}</span> `).join("");$("viewerIssueNote").textContent=d.issue_note||"";$("viewerIssueNote").style.display=d.issue_note?"block":"none"}
-function highlightField(i){document.querySelectorAll("#viewerOriginal .ov-field").forEach(e=>e.classList.remove("ov-hot"));let el=document.querySelector(`#viewerOriginal .ov-field[data-i="${i}"]`);if(el)el.classList.add("ov-hot");document.querySelectorAll("#viewerFields .ov-row").forEach(e=>e.classList.remove("active"));let row=document.querySelector(`#viewerFields .ov-row[data-f="${i}"]`);if(row)row.classList.add("active")}
-function saveCorrection(){toast("人工校对已保存（演示）")}
-function markAsEvidence(){toast("已采纳为审计底稿证据（演示）")}
-async function loadState(){state=await api("/api/settlement-demo/state");currentIssueId=state.issues?.[0]?.id||null;renderAll();setView(pageNames[location.hash.slice(1)]?location.hash.slice(1):"overview")}
-async function runAnalysis(){ $("runBtn").disabled=true;$("runBtn").textContent="分析中";try{clearExpertCache();clearIssueAnalysisCache();state=await api("/api/settlement-demo/analyze",{method:"POST"});renderAll();toast("三表比对和异常规则已重新执行")}catch(e){toast(e.message)}finally{$("runBtn").disabled=false;$("runBtn").textContent="执行分析"}}
-async function uploadFiles(e){e.preventDefault();let i=$("fileInput");if(!i.files.length){toast("请选择资料文件");return}let f=new FormData();[...i.files].forEach(x=>f.append("files",x));try{clearExpertCache();clearIssueAnalysisCache();state=await api("/api/settlement-demo/upload",{method:"POST",body:f});renderAll();toast("资料已接入并完成字段预览")}catch(x){toast(x.message)}}
-async function resetDemo(){try{clearExpertCache();clearIssueAnalysisCache();state=await api("/api/settlement-demo/reset",{method:"POST"});currentIssueId=state.issues?.[0]?.id||null;renderAll();toast("已恢复内置演示数据")}catch(e){toast(e.message)}}
-async function askKnowledge(){try{let r=await api("/api/settlement-demo/knowledge",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({question:$("question").value,issue_id:currentIssueId})});$("answer").textContent=r.answer}catch(e){$("answer").textContent=e.message}}
-async function saveDecision(){let x=issue();if(!x)return;let d=document.querySelector("input[name=decision]:checked")?.value||"confirm";try{clearExpertCache();clearIssueAnalysisCache();state=await api("/api/settlement-demo/decision",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({issue_id:x.id,decision:d,note:$("reviewNote").value})});renderAll();toast("主审结论已保存，报告和闭环状态已更新");setView("report")}catch(e){toast(e.message)}}
-async function openKnowledgeFromIssue(){let x=issue();if(!x)return;let pkg=issueAnalysisPayload(x.id);if(!pkg){await loadIssueAnalysis(x.id);pkg=issueAnalysisPayload(x.id)}$("question").value=pkg?.knowledge_prompt||x.suggestion||x.judgement||"";setView("knowledge")}
-async function launchConference(){let x=issue();if(!x)return;let pkg=issueAnalysisPayload(x.id);if(!pkg){await loadIssueAnalysis(x.id);pkg=issueAnalysisPayload(x.id)}setView("experts");await loadExpertOpinions(x.id,true)}
-document.querySelectorAll("[data-view]").forEach(e=>e.onclick=()=>setView(e.dataset.view));document.querySelectorAll("[data-jump]").forEach(e=>e.onclick=()=>setView(e.dataset.jump));$("runBtn").onclick=runAnalysis;$("resetBtn").onclick=resetDemo;$("uploadForm").onsubmit=uploadFiles;$("askBtn").onclick=askKnowledge;$("decisionBtn").onclick=saveDecision;$("riskFilter").onchange=renderIssues;$("assignBtn").onclick=()=>{toast("问题将进入专家圆桌或知识问答层");setView("experts")};$("analysisKnowledgeBtn").onclick=openKnowledgeFromIssue;$("analysisConferenceBtn").onclick=launchConference;$("launchConferenceBtn").onclick=launchConference;$("sapBtn").onclick=()=>toast("已创建 SAP、司库/DMP、项目系统抓取模拟任务");$("exportBtn").onclick=()=>{window.location.href="/api/settlement-demo/export?format=csv";toast("正在下载疑点清单")};$("reportExportBtn").onclick=()=>{window.location.href="/api/settlement-demo/export?format=md";toast("正在下载报告草稿")};loadState().catch(e=>{document.querySelector(".content").innerHTML=`<div class="section"><div class="section-body">${esc(e.message)}</div></div>`});
-</script>
+
+    <!-- ============================================================================
+         弹窗：疑点详情
+         ============================================================================ -->
+    <div class="modal-overlay" id="modal-issue-detail">
+        <div class="modal-container" style="width: 800px;">
+            <div class="modal-header">
+                <div class="modal-title">🔍 疑点详情</div>
+                <button class="modal-close" onclick="closeModal('modal-issue-detail')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div style="padding: 16px; background: var(--bg); border-radius: 6px; margin-bottom: 16px;">
+                    <h4 style="margin-bottom: 12px;">基本信息</h4>
+                    <div style="display: grid; grid-template-columns: 120px 1fr; gap: 8px; font-size: 14px;">
+                        <div style="color: var(--text-secondary);">疑点编号：</div>
+                        <div><strong>ISS-2024-001</strong></div>
+                        <div style="color: var(--text-secondary);">模型类型：</div>
+                        <div><span class="tag blue">模型2.2</span> 包干禁止签证与清单外项剔除</div>
+                        <div style="color: var(--text-secondary);">风险等级：</div>
+                        <div><span class="tag red">高危</span></div>
+                        <div style="color: var(--text-secondary);">时段阶段：</div>
+                        <div><span class="tag orange">事中</span></div>
+                        <div style="color: var(--text-secondary);">涉及金额：</div>
+                        <div><strong style="color: var(--danger); font-size: 18px;">50.00万元</strong></div>
+                    </div>
+                </div>
+
+                <div style="padding: 16px; background: var(--bg); border-radius: 6px; margin-bottom: 16px;">
+                    <h4 style="margin-bottom: 12px;">问题描述</h4>
+                    <p style="font-size: 14px; line-height: 1.8; color: var(--text-primary);">
+                        江宁区住宅配套项目采用固定总价包干合同（合同金额5500万元），合同明确约定"包干价不予调整"。
+                        分包方在施工过程中提出临时签证项，金额50万元，但该项目：<br>
+                        1. 不在原合同清单范围内<br>
+                        2. 未经业主变更指令<br>
+                        3. 签证单缺少业主盖章<br>
+                        根据模型2.2规则判断，<strong>建议全额审减或部分审减</strong>。
+                    </p>
+                </div>
+
+                <div style="padding: 16px; background: var(--bg); border-radius: 6px;">
+                    <h4 style="margin-bottom: 12px;">证据链分析</h4>
+                    <div style="font-size: 14px;">
+                        <div style="margin-bottom: 8px;">
+                            <span class="tag red">证据缺失</span> 业主变更指令
+                        </div>
+                        <div style="margin-bottom: 8px;">
+                            <span class="tag amber">证据不足</span> 现场签证单未盖业主章
+                        </div>
+                        <div>
+                            <span class="tag green">证据充分</span> 合同包干条款明确
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px; display: flex; gap: 12px; justify-content: flex-end;">
+                    <button class="btn btn-secondary" onclick="closeModal('modal-issue-detail')">关闭</button>
+                    <button class="btn btn-primary">转入专家会审</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================================
+        // JavaScript 交互逻辑（续）
+        // ============================================================================
+
+        function sendChatMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            if (!message) return;
+
+            const messagesContainer = document.getElementById('chat-messages');
+
+            // 添加用户消息
+            const userMsg = document.createElement('div');
+            userMsg.className = 'chat-message user';
+            userMsg.textContent = message;
+            messagesContainer.appendChild(userMsg);
+
+            // 清空输入框
+            input.value = '';
+
+            // 模拟助手回复
+            setTimeout(() => {
+                const assistantMsg = document.createElement('div');
+                assistantMsg.className = 'chat-message assistant';
+                assistantMsg.textContent = '根据GB50500-2013第3.2.1条规定，固定总价合同在约定的风险范围内合同价款不予调整。包干合同原则上不得增加合同外项目，除非满足以下条件：1）业主书面变更指令；2）不在原合同风险范围内；3）经过合同约定的变更审批程序。';
+                messagesContainer.appendChild(assistantMsg);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }, 800);
+
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function upgradeToExpertPanel() {
+            const panel = document.getElementById('expert-panel');
+            if (panel.style.display === 'none') {
+                panel.style.display = 'block';
+                panel.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        function openReviewModal() {
+            alert('主审裁决功能：将打开裁决弹窗，录入三段式裁决结论');
+        }
+
+        function openClosureModal(issueId) {
+            openModal('modal-closure');
+            console.log('打开销号弹窗，疑点ID:', issueId);
+        }
+
+        function submitClosure() {
+            const proofType = document.getElementById('proof-type').value;
+            const proofNumber = document.getElementById('proof-number').value.trim();
+
+            if (!proofType || !proofNumber) {
+                alert('⚠️ 凭证类型和凭证号为必填项，严禁无凭证销号！');
+                return;
+            }
+
+            // 调用后端API提交销号
+            fetch(`${API_BASE}/remediation/close`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    issue_id: 'ISS-2024-001',
+                    proof_type: proofType,
+                    proof_number: proofNumber,
+                    remark: document.getElementById('proof-remark').value
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('✓ 销号成功！财务支付锁已解除，SAP付款权限已恢复。');
+                    closeModal('modal-closure');
+                    // 刷新整改清单
+                    switchView('closure');
+                } else {
+                    alert('销号失败：' + data.message);
+                }
+            })
+            .catch(err => {
+                console.error('销号提交失败:', err);
+                alert('网络错误，请稍后重试');
+            });
+        }
+
+        // 回车发送消息
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatInput = document.getElementById('chat-input');
+            if (chatInput) {
+                chatInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        sendChatMessage();
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
+    </main>
+
+    <script>
+        // ============================================================================
+        // 全局状态管理
+        // ============================================================================
+        const AppState = {
+            currentView: 'overview',
+            currentContract: 'C2024001',
+            filters: {
+                orgLevel: '',
+                orgName: '',
+                projStatus: '',
+                riskFilter: ''
+            }
+        };
+
+        // ============================================================================
+        // API 调用函数
+        // ============================================================================
+        const API_BASE = 'http://localhost:5100/api';
+
+        async function fetchDashboardStats() {
+            try {
+                const response = await fetch(`${API_BASE}/dashboard/stats`);
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    document.getElementById('stat-pending').innerHTML =
+                        `${data.pending_review}<span class="stat-unit">项</span>`;
+                    document.getElementById('stat-remediation').innerHTML =
+                        `${data.in_remediation}<span class="stat-unit">项</span>`;
+                    document.getElementById('stat-closed').innerHTML =
+                        `${data.closed}<span class="stat-unit">项</span>`;
+                    document.getElementById('stat-amount').innerHTML =
+                        `${(data.total_amount_impact / 10000).toFixed(1)}<span class="stat-unit">万元</span>`;
+                }
+            } catch (error) {
+                console.error('获取统计数据失败:', error);
+            }
+        }
+
+        async function fetchIssuesList() {
+            try {
+                const params = new URLSearchParams(AppState.filters);
+                const response = await fetch(`${API_BASE}/issues/list?${params}`);
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    renderIssuesTable(data.issues);
+                }
+            } catch (error) {
+                console.error('获取疑点清单失败:', error);
+            }
+        }
+
+        async function fetchThreeTableComparison(contractId) {
+            try {
+                const response = await fetch(`${API_BASE}/comparison/${contractId}`);
+                const data = await response.json();
+                renderComparisonData(data);
+            } catch (error) {
+                console.error('获取三表比对数据失败:', error);
+            }
+        }
+
+        async function initSampleData() {
+            try {
+                const response = await fetch(`${API_BASE}/init`, { method: 'POST' });
+                const data = await response.json();
+                console.log('示例数据初始化:', data);
+                fetchDashboardStats();
+            } catch (error) {
+                console.error('初始化数据失败:', error);
+            }
+        }
+
+        // ============================================================================
+        // 视图切换
+        // ============================================================================
+        function switchView(viewName) {
+            // 更新导航激活状态
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+                if (item.dataset.view === viewName) {
+                    item.classList.add('active');
+                }
+            });
+
+            // 切换视图显示
+            document.querySelectorAll('.view-container').forEach(view => {
+                view.classList.remove('active');
+            });
+            document.getElementById(`view-${viewName}`).classList.add('active');
+
+            AppState.currentView = viewName;
+
+            // 加载对应视图数据
+            loadViewData(viewName);
+        }
+
+        function loadViewData(viewName) {
+            switch (viewName) {
+                case 'overview':
+                    fetchDashboardStats();
+                    break;
+                case 'compare':
+                    fetchThreeTableComparison(AppState.currentContract);
+                    break;
+                case 'issues':
+                    fetchIssuesList();
+                    break;
+            }
+        }
+
+        // ============================================================================
+        // 渲染函数
+        // ============================================================================
+        function renderIssuesTable(issues) {
+            const tbody = document.getElementById('issues-tbody');
+            if (!tbody) return;
+
+            tbody.innerHTML = issues.map(issue => `
+                <tr>
+                    <td>${issue.issue_id.substr(0, 8)}</td>
+                    <td>
+                        <span class="tag ${issue.time_phase === '事前' ? 'blue' : (issue.time_phase === '事中' ? 'orange' : 'purple')}">
+                            ${issue.time_phase || '事中'}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="tag ${issue.risk_level === '高危' ? 'red' : (issue.risk_level === '中等' ? 'amber' : 'green')}">
+                            ${issue.risk_level}
+                        </span>
+                    </td>
+                    <td><strong>${issue.model_code}</strong> ${issue.title}</td>
+                    <td>${(issue.amount_impact / 10000).toFixed(2)}万</td>
+                    <td>
+                        <span class="tag ${issue.status === '待主审复核' ? 'red' : (issue.status === '整改中' ? 'amber' : 'green')}">
+                            ${issue.status}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="viewIssueDetail('${issue.issue_id}')">查看详情</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderComparisonData(data) {
+            if (!data || data.status === 'no_data') {
+                console.warn('无三表比对数据');
+                return;
+            }
+
+            // 更新左侧业主确权轨
+            const ownerPanel = document.getElementById('owner-amounts');
+            if (ownerPanel) {
+                ownerPanel.innerHTML = `
+                    <div class="amount-row">
+                        <span class="amount-label">合同金额</span>
+                        <span class="amount-value">${(data.contract_amount / 10000).toFixed(2)}万</span>
+                    </div>
+                    <div class="amount-row">
+                        <span class="amount-label">业主确权金额</span>
+                        <span class="amount-value" style="color: var(--success);">
+                            ${(data.owner_confirmed / 10000).toFixed(2)}万
+                        </span>
+                    </div>
+                    <div class="amount-row">
+                        <span class="amount-label">确权偏离</span>
+                        <span class="amount-value" style="color: ${data.auth_deviation < 0 ? 'var(--danger)' : 'var(--success)'};">
+                            ${data.auth_deviation > 0 ? '+' : ''}${(data.auth_deviation / 10000).toFixed(2)}万
+                        </span>
+                    </div>
+                `;
+            }
+
+            // 更新右侧分包成本轨
+            const subPanel = document.getElementById('sub-amounts');
+            if (subPanel) {
+                subPanel.innerHTML = `
+                    <div class="amount-row">
+                        <span class="amount-label">合同金额</span>
+                        <span class="amount-value">${(data.contract_amount / 10000).toFixed(2)}万</span>
+                    </div>
+                    <div class="amount-row">
+                        <span class="amount-label">分包申报金额</span>
+                        <span class="amount-value" style="color: var(--warning);">
+                            ${(data.sub_claimed / 10000).toFixed(2)}万
+                        </span>
+                    </div>
+                    <div class="amount-row">
+                        <span class="amount-label">成本偏离</span>
+                        <span class="amount-value" style="color: ${data.cost_deviation > 0 ? 'var(--danger)' : 'var(--success)'};">
+                            ${data.cost_deviation > 0 ? '+' : ''}${(data.cost_deviation / 10000).toFixed(2)}万
+                        </span>
+                    </div>
+                    <div class="amount-row" style="background: var(--success-bg); border-left: 3px solid var(--success);">
+                        <span class="amount-label"><strong>预计利润</strong></span>
+                        <span class="amount-value" style="color: var(--success);">
+                            ${(data.profit_margin / 10000).toFixed(2)}万 (${data.profit_rate.toFixed(1)}%)
+                        </span>
+                    </div>
+                `;
+            }
+        }
+
+        // ============================================================================
+        // 弹窗控制
+        // ============================================================================
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        function viewIssueDetail(issueId) {
+            openModal('modal-issue-detail');
+            // 加载疑点详情
+            console.log('查看疑点详情:', issueId);
+        }
+
+        // ============================================================================
+        // 事件监听器
+        // ============================================================================
+        document.addEventListener('DOMContentLoaded', function() {
+            // 导航切换
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    switchView(this.dataset.view);
+                });
+            });
+
+            // 筛选器联动
+            ['orgLevel', 'orgName', 'projStatus', 'riskFilter'].forEach(filterId => {
+                const element = document.getElementById(filterId);
+                if (element) {
+                    element.addEventListener('change', function() {
+                        AppState.filters[filterId] = this.value;
+                        fetchDashboardStats();
+                        fetchIssuesList();
+                    });
+                }
+            });
+
+            // 关闭弹窗
+            document.querySelectorAll('.modal-close').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    this.closest('.modal-overlay').classList.remove('active');
+                });
+            });
+
+            // 点击遮罩关闭弹窗
+            document.querySelectorAll('.modal-overlay').forEach(overlay => {
+                overlay.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        this.classList.remove('active');
+                    }
+                });
+            });
+
+            // 初始化数据
+            initSampleData();
+        });
+    </script>
 </body>
 </html>
