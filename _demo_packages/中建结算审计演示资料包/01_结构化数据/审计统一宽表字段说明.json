@@ -1,0 +1,531 @@
+{
+  "name": "审计统一宽表",
+  "version": "V3.2-adapted",
+  "grain": "project_id + contract_id + item_code + period",
+  "purpose": "承接合同、投标、结算、现场、材料、付款、证据和模型结果；效益审核表单独维护",
+  "source_spec": "模型建设/工程全生命周期结算审计多智能体系统终极实施方案与全量数据宽表 (V3.2 终极完整版).md",
+  "model_count": {
+    "preparation": 1,
+    "core": 12,
+    "total": 13
+  },
+  "tables": [
+    {
+      "code": "A",
+      "name": "项目与合同全周期宽表",
+      "status": "建议正式建表"
+    },
+    {
+      "code": "B",
+      "name": "工程量清单与三表穿透原子宽表",
+      "status": "建议正式建表"
+    },
+    {
+      "code": "C",
+      "name": "现场时空工单与人机轨迹宽表",
+      "status": "建议正式建表"
+    },
+    {
+      "code": "D",
+      "name": "工程结算三表穿透比对宽表",
+      "status": "当前演示合并实现"
+    },
+    {
+      "code": "E",
+      "name": "项目效益审核表",
+      "status": "独立维护，不并入审计统一宽表"
+    }
+  ],
+  "fields": [
+    {
+      "name": "project_id",
+      "label": "项目编码",
+      "domain": "项目主键",
+      "models": "M0/M1/M2/M3",
+      "source": "settlement_demo.json"
+    },
+    {
+      "name": "org_code",
+      "label": "组织编码",
+      "domain": "组织范围",
+      "models": "M0/M3",
+      "source": "行政架构-四局.md"
+    },
+    {
+      "name": "org_name",
+      "label": "组织名称",
+      "domain": "组织范围",
+      "models": "M0/M3",
+      "source": "行政架构-四局.md"
+    },
+    {
+      "name": "project_name",
+      "label": "项目名称",
+      "domain": "项目名称",
+      "models": "M0/M1/M2/M3",
+      "source": "合同、结算资料"
+    },
+    {
+      "name": "audit_task_id",
+      "label": "审计任务编码",
+      "domain": "审计任务",
+      "models": "M0",
+      "source": "系统生成"
+    },
+    {
+      "name": "contract_id",
+      "label": "合同编码",
+      "domain": "合同主键",
+      "models": "M1.3/M2.1/M2.2/M2.4/M2.5",
+      "source": "分包合同"
+    },
+    {
+      "name": "subcontractor_name",
+      "label": "分包单位",
+      "domain": "责任主体",
+      "models": "M2.1/M2.4/M2.5/M3.3",
+      "source": "分包合同"
+    },
+    {
+      "name": "item_code",
+      "label": "清单编码",
+      "domain": "清单主键",
+      "models": "12个核心模型",
+      "source": "结算资料"
+    },
+    {
+      "name": "item_name",
+      "label": "清单名称",
+      "domain": "清单名称",
+      "models": "12个核心模型",
+      "source": "结算资料"
+    },
+    {
+      "name": "unit",
+      "label": "计量单位",
+      "domain": "计量单位",
+      "models": "M1.1/M2.2/M2.3",
+      "source": "结算资料"
+    },
+    {
+      "name": "period",
+      "label": "业务期间",
+      "domain": "时间维度",
+      "models": "M1.2/M3.1/M3.2",
+      "source": "施工日志、结算资料"
+    },
+    {
+      "name": "bid_quantity",
+      "label": "投标数量",
+      "domain": "投标基准",
+      "models": "M1.1/M2.2/M2.3",
+      "source": "投标文件"
+    },
+    {
+      "name": "bid_unit_price",
+      "label": "投标单价",
+      "domain": "投标基准",
+      "models": "M2.1/M2.2/M3.3",
+      "source": "投标文件"
+    },
+    {
+      "name": "contract_quantity",
+      "label": "合同数量",
+      "domain": "合同基准",
+      "models": "M1.1/M2.2/M2.3",
+      "source": "分包合同"
+    },
+    {
+      "name": "contract_unit_price",
+      "label": "合同单价",
+      "domain": "合同基准",
+      "models": "M2.1/M2.2/M2.4",
+      "source": "分包合同"
+    },
+    {
+      "name": "contract_sign_date",
+      "label": "合同签订日期",
+      "domain": "合同时间",
+      "models": "M2.4",
+      "source": "分包合同"
+    },
+    {
+      "name": "contract_start_date",
+      "label": "合同开工日期",
+      "domain": "合同时间",
+      "models": "M2.4",
+      "source": "分包合同"
+    },
+    {
+      "name": "contract_end_date",
+      "label": "合同完工日期",
+      "domain": "合同时间",
+      "models": "M1.2/M2.4",
+      "source": "分包合同"
+    },
+    {
+      "name": "earliest_work_date",
+      "label": "最早施工日期",
+      "domain": "现场时间",
+      "models": "M2.4/M3.3",
+      "source": "施工日志"
+    },
+    {
+      "name": "actual_quantity",
+      "label": "实际完成数量",
+      "domain": "现场实绩",
+      "models": "M1.1/M2.3/M2.4",
+      "source": "施工日志、验收台账"
+    },
+    {
+      "name": "actual_unit_price",
+      "label": "实际执行单价",
+      "domain": "现场实绩",
+      "models": "M2.1/M2.2",
+      "source": "结算台账"
+    },
+    {
+      "name": "variation_id",
+      "label": "变更签证编号",
+      "domain": "变更主键",
+      "models": "M1.3/M2.2",
+      "source": "签证、施工日志"
+    },
+    {
+      "name": "variation_amount",
+      "label": "变更金额",
+      "domain": "变更金额",
+      "models": "M1.3/M2.2",
+      "source": "签证、结算资料"
+    },
+    {
+      "name": "variation_approved",
+      "label": "变更是否审批",
+      "domain": "变更状态",
+      "models": "M1.3/M2.1",
+      "source": "审批单、签证"
+    },
+    {
+      "name": "settlement_quantity",
+      "label": "申报结算数量",
+      "domain": "结算申报",
+      "models": "M1.1/M2.2/M2.3",
+      "source": "结算单"
+    },
+    {
+      "name": "settlement_unit_price",
+      "label": "申报结算单价",
+      "domain": "结算申报",
+      "models": "M2.1/M2.2",
+      "source": "结算单"
+    },
+    {
+      "name": "settlement_amount",
+      "label": "申报结算金额",
+      "domain": "结算申报",
+      "models": "M1.1/M2.1/M2.2/M2.5",
+      "source": "结算单"
+    },
+    {
+      "name": "approved_quantity",
+      "label": "审定数量",
+      "domain": "审定结果",
+      "models": "M1.1/M2.2/M2.3",
+      "source": "审定结论"
+    },
+    {
+      "name": "approved_amount",
+      "label": "审定金额",
+      "domain": "审定结果",
+      "models": "M1.1/M2.1/M2.2/M2.5",
+      "source": "审定结论"
+    },
+    {
+      "name": "material_budget_quantity",
+      "label": "材料预算量",
+      "domain": "材料基准",
+      "models": "M2.3",
+      "source": "材料台账、投标文件"
+    },
+    {
+      "name": "material_actual_quantity",
+      "label": "材料实际耗用量",
+      "domain": "材料实绩",
+      "models": "M2.3",
+      "source": "材料进场验收台账"
+    },
+    {
+      "name": "material_loss_rate",
+      "label": "材料损耗率",
+      "domain": "材料指标",
+      "models": "M2.3",
+      "source": "材料台账、规则清单"
+    },
+    {
+      "name": "material_deduction_amount",
+      "label": "材料超耗应扣金额",
+      "domain": "材料计算结果",
+      "models": "M2.3",
+      "source": "模型计算"
+    },
+    {
+      "name": "paid_amount",
+      "label": "已支付金额",
+      "domain": "资金实绩",
+      "models": "M3.3/M1.2",
+      "source": "财务效益审核数据源"
+    },
+    {
+      "name": "unpaid_amount",
+      "label": "未支付金额",
+      "domain": "资金实绩",
+      "models": "M1.2/M3.3",
+      "source": "财务效益审核数据源"
+    },
+    {
+      "name": "evidence_doc_ids",
+      "label": "证据文档编号",
+      "domain": "证据索引",
+      "models": "全部模型",
+      "source": "合同、结算单、日志、台账"
+    },
+    {
+      "name": "evidence_locations",
+      "label": "证据定位",
+      "domain": "证据穿透",
+      "models": "全部模型",
+      "source": "扫描件页码/表格行号"
+    },
+    {
+      "name": "source_file_names",
+      "label": "原始文件名",
+      "domain": "来源追溯",
+      "models": "M0/全部模型",
+      "source": "资料包文件"
+    },
+    {
+      "name": "data_quality_status",
+      "label": "数据质量状态",
+      "domain": "质量控制",
+      "models": "M0",
+      "source": "模型计算"
+    },
+    {
+      "name": "settlement_over_contract_rate",
+      "label": "结算超合同比例",
+      "domain": "派生指标",
+      "models": "M2.1",
+      "source": "模型计算"
+    },
+    {
+      "name": "quantity_deviation_rate",
+      "label": "数量偏差率",
+      "domain": "派生指标",
+      "models": "M1.1/M2.2/M2.3",
+      "source": "模型计算"
+    },
+    {
+      "name": "risk_index",
+      "label": "风险指数",
+      "domain": "派生指标",
+      "models": "M0/M1/M2/M3",
+      "source": "模型计算"
+    },
+    {
+      "name": "item_seq",
+      "label": "结算子目序号",
+      "domain": "清单主键",
+      "models": "M1.1/M2.1/M2.2",
+      "source": "结算单"
+    },
+    {
+      "name": "feature_desc",
+      "label": "清单项目特征描述",
+      "domain": "清单特征",
+      "models": "M2.2/M2.4",
+      "source": "招标文件、合同清单"
+    },
+    {
+      "name": "item_category",
+      "label": "清单费用类别",
+      "domain": "清单分类",
+      "models": "M2.1/M2.2/M2.3",
+      "source": "结算单"
+    },
+    {
+      "name": "is_contract_item",
+      "label": "是否原合同清单项",
+      "domain": "清单归属",
+      "models": "M2.2",
+      "source": "系统比对"
+    },
+    {
+      "name": "qty_change_approved",
+      "label": "累计合规变更工程量",
+      "domain": "变更量",
+      "models": "M1.3/M2.2",
+      "source": "签证台账"
+    },
+    {
+      "name": "qty_audit_approved",
+      "label": "审计最终审定工程量",
+      "domain": "审定结果",
+      "models": "M1.1/M2.2/M2.3",
+      "source": "系统计算/主审判定"
+    },
+    {
+      "name": "qty_diff_vs_contract",
+      "label": "结算超合同变更量差",
+      "domain": "数量差异",
+      "models": "M2.2",
+      "source": "系统计算"
+    },
+    {
+      "name": "qty_diff_vs_actual",
+      "label": "结算超实测验收量差",
+      "domain": "数量差异",
+      "models": "M1.1/M2.2",
+      "source": "系统计算"
+    },
+    {
+      "name": "qty_deducted",
+      "label": "算量核减工程量",
+      "domain": "数量审减",
+      "models": "M1.1/M2.2",
+      "source": "系统计算"
+    },
+    {
+      "name": "price_tender_control",
+      "label": "招标控制价单价",
+      "domain": "价格基准",
+      "models": "M2.1/M3.3",
+      "source": "招标文件"
+    },
+    {
+      "name": "price_temp_settlement",
+      "label": "过程临时结算单价",
+      "domain": "价格过程值",
+      "models": "M2.1",
+      "source": "过程结算单"
+    },
+    {
+      "name": "price_market_info",
+      "label": "市场/定额参考价",
+      "domain": "价格基准",
+      "models": "M2.1/M2.2",
+      "source": "信息价/定额库"
+    },
+    {
+      "name": "price_audit_approved",
+      "label": "审计最终审定单价",
+      "domain": "价格审定",
+      "models": "M2.1/M2.2",
+      "source": "系统计算/主审判定"
+    },
+    {
+      "name": "price_deviation_contract",
+      "label": "单价偏离合同比例",
+      "domain": "价格差异",
+      "models": "M2.1/M2.2",
+      "source": "系统计算"
+    },
+    {
+      "name": "price_deducted",
+      "label": "审减单价差额",
+      "domain": "价格审减",
+      "models": "M2.1/M2.2",
+      "source": "系统计算"
+    },
+    {
+      "name": "amount_actual_certified",
+      "label": "现场实测完成合价",
+      "domain": "金额比对",
+      "models": "M1.1/M2.2",
+      "source": "系统计算"
+    },
+    {
+      "name": "amount_audit_approved",
+      "label": "审计最终审定合价",
+      "domain": "金额审定",
+      "models": "M1.1/M2.1/M2.2",
+      "source": "系统计算"
+    },
+    {
+      "name": "amount_deducted_total",
+      "label": "单项审减总金额",
+      "domain": "金额审减",
+      "models": "M1.1/M2.1/M2.2",
+      "source": "系统计算"
+    },
+    {
+      "name": "deduct_reason_category",
+      "label": "审减归因分类",
+      "domain": "审减归因",
+      "models": "M1/M2/M3",
+      "source": "规则引擎"
+    },
+    {
+      "name": "cumulative_paid_amount",
+      "label": "累计已支付工程款",
+      "domain": "支付比对",
+      "models": "M1.2/M3.3",
+      "source": "SAP/司库"
+    },
+    {
+      "name": "payment_gap",
+      "label": "支付超前风险金额",
+      "domain": "支付风险",
+      "models": "M1.2/M3.3",
+      "source": "系统计算"
+    },
+    {
+      "name": "source_page",
+      "label": "原文页码/行号",
+      "domain": "证据定位",
+      "models": "M0/全部模型",
+      "source": "OCR/表格解析"
+    },
+    {
+      "name": "evidence_hash",
+      "label": "证据内容哈希",
+      "domain": "证据防篡改",
+      "models": "M0/复核",
+      "source": "文件指纹"
+    },
+    {
+      "name": "responsible_department",
+      "label": "责任部门",
+      "domain": "责任归属",
+      "models": "G1-G9",
+      "source": "组织架构/规则"
+    },
+    {
+      "name": "model_hit_codes",
+      "label": "命中模型编码",
+      "domain": "模型结果",
+      "models": "M0/M1/M2/M3",
+      "source": "规则引擎"
+    },
+    {
+      "name": "review_status",
+      "label": "主审复核状态",
+      "domain": "人工裁决",
+      "models": "主审驾驶舱",
+      "source": "主审操作"
+    },
+    {
+      "name": "review_reason",
+      "label": "主审复核意见",
+      "domain": "人工裁决",
+      "models": "主审驾驶舱",
+      "source": "主审操作"
+    },
+    {
+      "name": "management_chain_ids",
+      "label": "管理归因链编码",
+      "domain": "点线面归因",
+      "models": "G1-G9",
+      "source": "关联引擎"
+    }
+  ]
+}

@@ -32,4 +32,7 @@ __pycache__/
 *.txt
 *.zip
 *.csv
+.env
+.env.*
+!.env.example
 

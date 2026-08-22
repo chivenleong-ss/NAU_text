@@ -1,0 +1,221 @@
+{
+  "project": {
+    "id": "DEMO-NF-026",
+    "name": "南方产业园一期施工总承包项目",
+    "status": "资料已导入，待审计分析",
+    "phase": "竣工结算",
+    "owner": "南方产业园建设有限公司",
+    "contractor": "中建某局建设有限公司",
+    "sign_date": "2025-03-15",
+    "actual_finish_date": "2026-01-15",
+    "acceptance_date": "2026-03-20",
+    "settlement_date": null,
+    "completed_output": 41200000,
+    "confirmed_output": 38600000,
+    "cumulative_collection": 42000000,
+    "sap_cumulative_revenue": 51086000,
+    "sap_inventory_balance": 8687800,
+    "book_profit": 12000000,
+    "supply_chain_discount_fee": 37130000,
+    "steel_overdue_interest": 47100000,
+    "internal_loan_interest": 0,
+    "owner_default_ratio": 0.35,
+    "owner_default_months": 14,
+    "owner_progress_pay_ratio": 0.7,
+    "financials": {
+      "settlement_total": 51086000,
+      "actual_certified_total": 50200000,
+      "paid_total": 50620000
+    },
+    "documents": [
+      {
+        "id": "doc-contract",
+        "type": "分包合同",
+        "name": "A-SHJT-ZT-2022-02.md",
+        "status": "已识别"
+      },
+      {
+        "id": "doc-settlement",
+        "type": "分包结算",
+        "name": "主体工程劳务分包结算管理附表.md",
+        "status": "已识别"
+      },
+      {
+        "id": "doc-ledger",
+        "type": "结算台账",
+        "name": "结算台账.md",
+        "status": "已识别"
+      },
+      {
+        "id": "doc-material",
+        "type": "物资台账",
+        "name": "物资进场验收台账.md",
+        "status": "已识别"
+      },
+      {
+        "id": "doc-diary",
+        "type": "施工日志",
+        "name": "A项目施工日记（2024年01月20日）.md",
+        "status": "已识别"
+      },
+      {
+        "id": "doc-finance",
+        "type": "财务资料",
+        "name": "财务效益审核数据源.csv",
+        "status": "已识别"
+      }
+    ]
+  },
+  "line_items": [
+    {
+      "item_code": "DEMO-001",
+      "name": "主体结构混凝土",
+      "unit": "m³",
+      "location": "主体结构",
+      "contract": {
+        "quantity": 1000,
+        "unit_price": 420
+      },
+      "actual": {
+        "quantity": 1060,
+        "unit_price": 420
+      },
+      "settlement": {
+        "quantity": 1060,
+        "unit_price": 460
+      },
+      "change": {
+        "quantity": 0,
+        "approved": true
+      },
+      "evidence": [
+        {
+          "document": "物资进场验收台账.md",
+          "location": "第12行"
+        },
+        {
+          "document": "主体工程劳务分包结算管理附表.md",
+          "location": "第18行"
+        }
+      ]
+    },
+    {
+      "item_code": "DEMO-002",
+      "name": "钢筋材料损耗",
+      "unit": "t",
+      "location": "地下室",
+      "contract": {
+        "quantity": 100,
+        "unit_price": 3100
+      },
+      "actual": {
+        "quantity": 106,
+        "unit_price": 3100
+      },
+      "settlement": {
+        "quantity": 106,
+        "unit_price": 3500
+      },
+      "change": {
+        "quantity": 0,
+        "approved": true
+      },
+      "leakage": {
+        "kind": "material_loss"
+      },
+      "evidence": [
+        {
+          "document": "物资进场验收台账.md",
+          "location": "第32行"
+        },
+        {
+          "document": "结算台账.md",
+          "location": "第9行"
+        }
+      ]
+    },
+    {
+      "item_code": "DEMO-003",
+      "name": "临时变更签证",
+      "unit": "项",
+      "location": "园区道路",
+      "contract": {
+        "quantity": 1,
+        "unit_price": 180000
+      },
+      "actual": {
+        "quantity": 1,
+        "unit_price": 180000
+      },
+      "settlement": {
+        "quantity": 1,
+        "unit_price": 280000
+      },
+      "change": {
+        "quantity": 1,
+        "approved": false,
+        "relation": "overlap"
+      },
+      "evidence": [
+        {
+          "document": "施工日记.md",
+          "location": "2025-11-04"
+        }
+      ]
+    },
+    {
+      "item_code": "DEMO-004",
+      "name": "第三方代工维修",
+      "unit": "项",
+      "location": "精装区域",
+      "contract": {
+        "quantity": 1,
+        "unit_price": 900000
+      },
+      "actual": {
+        "quantity": 1,
+        "unit_price": 900000
+      },
+      "settlement": {
+        "quantity": 1,
+        "unit_price": 900000
+      },
+      "change": {
+        "quantity": 0,
+        "approved": true
+      },
+      "leakage": {
+        "kind": "machine_mismatch"
+      },
+      "evidence": [
+        {
+          "document": "施工日记.md",
+          "location": "退场记录"
+        }
+      ]
+    }
+  ],
+  "cost_components": {
+    "claims": [],
+    "rewards_penalties": [],
+    "management_fee": {}
+  },
+  "experts": [
+    {
+      "name": "合同造价专家"
+    },
+    {
+      "name": "现场工程专家"
+    },
+    {
+      "name": "财务资金专家"
+    },
+    {
+      "name": "法务风控专家"
+    }
+  ],
+  "meta": {
+    "package_name": "中建结算审计演示资料包",
+    "generated_at": "2026-08-22"
+  }
+}

@@ -1,474 +1,831 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-结算审核智能体 - Web后端服务
-轻量级 Flask 服务，提供 REST API 与静态资源托管
-端口: 5100
-"""
+"""Settlement audit web service."""
 
-from flask import Flask, jsonify, request, send_from_directory
-from flask_cors import CORS
-from settlement_audit_engine import SettlementAuditEngine
+from __future__ import annotations
+
+import csv
+import io
 import json
 import os
-from datetime import datetime
-import uuid
+import re
+import zipfile
+from pathlib import Path
+from typing import Any, Dict, List
 
-app = Flask(__name__, static_folder='.')
+from flask import Flask, jsonify, request, send_file, send_from_directory
+from flask_cors import CORS
+
+from settlement_audit_engine import SettlementAuditEngine, analyze, answer_question, parse_uploaded_file
+from generate_demo_package import generate_package
+from dify_adapter import DifyAdapter
+
+
+BASE_DIR = Path(__file__).resolve().parent
+ORG_SOURCE_PATH = BASE_DIR / "行政架构-四局.md"
+SOURCE_SEARCH_ROOTS = [
+    Path(r"E:\建模需要的表格"),
+    Path(r"C:\Users\sasa\Desktop\模型建设\260602"),
+    BASE_DIR / "模型建设",
+    BASE_DIR / "_demo_packages",
+]
+SOURCE_EXTENSIONS = {".pdf", ".doc", ".docx", ".xls", ".xlsx", ".csv", ".md", ".png", ".jpg", ".jpeg", ".tif", ".tiff"}
+
+app = Flask(__name__, static_folder=".")
 CORS(app)
 
-# 初始化审计引擎
 engine = SettlementAuditEngine()
+dify = DifyAdapter()
 
-# ============================================================================
-# 静态资源路由
-# ============================================================================
 
-@app.route('/')
+def _load_organization_nodes() -> Dict[str, Any]:
+    nodes: List[Dict[str, Any]] = []
+    if not ORG_SOURCE_PATH.exists():
+        return {"root": None, "nodes": [], "count": 0, "source": str(ORG_SOURCE_PATH)}
+    pattern = re.compile(r"^(?P<indent>\s*)-\s+\*\*(?P<name>.+?)\*\*（编码：(?P<code>\d+)）")
+    stack: List[Dict[str, Any]] = []
+    for raw_line in ORG_SOURCE_PATH.read_text(encoding="utf-8").splitlines():
+        match = pattern.match(raw_line)
+        if not match:
+            continue
+        level = len(match.group("indent")) // 4
+        node = {
+            "code": match.group("code"),
+            "name": match.group("name"),
+            "level": level,
+            "parent_code": None,
+            "children": [],
+        }
+        while stack and stack[-1]["level"] >= level:
+            stack.pop()
+        if stack:
+            node["parent_code"] = stack[-1]["code"]
+            stack[-1]["children"].append(node["code"])
+        nodes.append(node)
+        stack.append(node)
+    root = nodes[0]["code"] if nodes else None
+    return {"root": root, "nodes": nodes, "count": len(nodes), "source": str(ORG_SOURCE_PATH)}
+
+
+ORGANIZATION_NODES = _load_organization_nodes()
+
+
+def _category_from_request(default: str = "all") -> str:
+    category = request.args.get("category", default)
+    return category if category in {"all", "high_risk", "over_qty", "over_price"} else default
+
+
+def _json_body() -> Dict[str, Any]:
+    return request.get_json(silent=True) or {}
+
+
+def _upload_kind(filename: str) -> str:
+    lower = filename.lower()
+    if "合同" in filename or "contract" in lower:
+        return "contract"
+    if "竣工" in filename or "实际" in filename or "actual" in lower or "accept" in lower:
+        return "actual"
+    if "结算" in filename or "宽表" in filename or "settlement" in lower or "wide" in lower or "审定" in filename:
+        return "settlement"
+    return "other"
+
+
+def _rows_from_csv_bytes(raw: bytes) -> List[Dict[str, Any]]:
+    text = raw.decode("utf-8-sig")
+    reader = csv.DictReader(io.StringIO(text))
+    return list(reader)
+
+
+def _build_uploaded_dataset(files) -> Dict[str, Any]:
+    payloads: Dict[str, List[Dict[str, Any]]] = {"contract": [], "actual": [], "settlement": [], "other": []}
+    filenames: List[str] = []
+    structured_payload: Dict[str, Any] = {}
+    package_files: List[str] = []
+    package_rows: List[Dict[str, Any]] = []
+    for file_storage in files:
+        filename = file_storage.filename or "upload"
+        filenames.append(filename)
+        raw = file_storage.read()
+        if filename.lower().endswith(".zip"):
+            with zipfile.ZipFile(io.BytesIO(raw)) as archive:
+                for name in archive.namelist():
+                    if name.endswith("/"):
+                        continue
+                    package_files.append(name)
+                    data = archive.read(name)
+                    if name.lower().endswith(".csv"):
+                        rows = _rows_from_csv_bytes(data)
+                        if rows:
+                            payloads[_upload_kind(name)].extend(rows)
+                            if "审计统一宽表" in name or "canonical" in name.lower():
+                                package_rows.extend(rows)
+                    elif name.lower().endswith(".json"):
+                        try:
+                            parsed = json.loads(data.decode("utf-8-sig"))
+                            if isinstance(parsed, dict) and parsed.get("line_items"):
+                                structured_payload = parsed
+                        except (UnicodeDecodeError, json.JSONDecodeError):
+                            continue
+        elif filename.lower().endswith(".csv"):
+            rows = _rows_from_csv_bytes(raw)
+            if rows:
+                payloads[_upload_kind(filename)].extend(rows)
+        elif filename.lower().endswith(".json"):
+            try:
+                parsed = json.loads(raw.decode("utf-8-sig"))
+                if isinstance(parsed, dict) and parsed.get("line_items"):
+                    structured_payload = parsed
+            except (UnicodeDecodeError, json.JSONDecodeError):
+                pass
+
+    if structured_payload:
+        structured_payload.setdefault("meta", {})
+        documents = list(structured_payload.get("project", {}).get("documents", []) or [])
+        known_names = {str(doc.get("name", "")) for doc in documents}
+        for index, name in enumerate(package_files, start=1):
+            base = Path(name).name
+            if base in known_names or base in {"资料包清单.json", "settlement_demo.json"}:
+                continue
+            documents.append({"id": f"upload-doc-{index:03d}", "type": _source_category(Path(base)), "name": base, "status": "待校验"})
+        structured_payload.setdefault("project", {})["documents"] = documents
+        structured_payload["meta"].update({
+            "uploaded_files": filenames,
+            "package_files": package_files,
+            "data_source": "uploaded_package",
+            "data_layers": {
+                "system_capture": {"label": "系统抓数", "status": "待接入", "records": 0, "rows": []},
+                "document_ocr": {"label": "扫描件/OCR识别", "status": "已登记待核验", "records": len(documents), "files": package_files},
+                "canonical_wide_table": {"label": "统一审计宽表", "status": "已生成待校验", "records": len(package_rows) or len(structured_payload.get("line_items", [])), "rows": package_rows},
+            },
+        })
+        return structured_payload
+
+    merged: Dict[str, Dict[str, Any]] = {}
+    for kind, rows in payloads.items():
+        for row in rows:
+            code = row.get("项目编码") or row.get("项目编号") or row.get("item_code") or row.get("item") or row.get("编码")
+            if not code:
+                continue
+            item = merged.setdefault(
+                code,
+                {
+                    "item_code": code,
+                    "name": row.get("项目名称") or row.get("name") or code,
+                    "unit": row.get("单位") or row.get("unit") or "",
+                    "contract": {"quantity": 0, "unit_price": 0},
+                    "actual": {"quantity": 0, "unit_price": 0},
+                    "settlement": {"quantity": 0, "unit_price": 0},
+                    "change": {"quantity": 0, "unit_price": 0, "approved": True},
+                    "evidence": [],
+                },
+            )
+            qty = row.get("工程量") or row.get("quantity") or row.get("数量")
+            price = row.get("单价") or row.get("unit_price") or row.get("综合单价")
+            if kind == "contract":
+                item["contract"] = {"quantity": qty or 0, "unit_price": price or 0}
+            elif kind == "actual":
+                item["actual"] = {"quantity": qty or 0, "unit_price": price or 0}
+            elif kind == "settlement":
+                item["settlement"] = {"quantity": qty or 0, "unit_price": price or 0}
+
+    line_items = list(merged.values())
+    financials = {
+        "contract_total": sum(float(x.get("contract", {}).get("quantity", 0)) * float(x.get("contract", {}).get("unit_price", 0)) for x in line_items),
+        "settlement_total": sum(float(x.get("settlement", {}).get("quantity", 0)) * float(x.get("settlement", {}).get("unit_price", 0)) for x in line_items),
+        "paid_total": sum(float(x.get("settlement", {}).get("quantity", 0)) * float(x.get("settlement", {}).get("unit_price", 0)) for x in line_items),
+    }
+    return {
+        "project": {"id": "UPLOAD", "name": "上传资料包", "status": "结算审核"},
+        "line_items": line_items,
+        "financials": financials,
+        "cost_components": {"claims": [], "rewards_penalties": [], "management_fee": {}},
+        "historical_patterns": [],
+        "experts": engine.raw_data.get("experts", []),
+        "meta": {"uploaded_files": filenames},
+    }
+
+
+def _source_category(path: Path) -> str:
+    name = path.name.lower()
+    if "合同" in path.name or "contract" in name:
+        return "合同"
+    if "结算" in path.name or "审定" in path.name or "settlement" in name:
+        return "结算"
+    if "日志" in path.name or "日记" in path.name or "diary" in name:
+        return "施工日志"
+    if "投标" in path.name or "招标" in path.name or "tender" in name:
+        return "投标/招标"
+    if "材料" in path.name or "物资" in path.name:
+        return "材料台账"
+    if "效益" in path.name or "财务" in path.name:
+        return "效益/财务"
+    return "其他资料"
+
+
+def _find_source_file(name: str) -> Path | None:
+    wanted = Path(str(name or "").replace("\\", "/")).name
+    if not wanted or wanted in {".", ".."}:
+        return None
+    candidates: List[Path] = []
+    for root in SOURCE_SEARCH_ROOTS:
+        if not root.exists():
+            continue
+        candidates.extend(path for path in root.rglob(wanted) if path.is_file())
+    package_root = BASE_DIR / "_demo_packages" / "中建结算审计演示资料包"
+    if package_root.exists():
+        candidates.extend(path for path in package_root.rglob(wanted) if path.is_file())
+    return next((path for path in candidates if path.suffix.lower() in SOURCE_EXTENSIONS), None)
+
+
+def _read_source_file(path: Path) -> Dict[str, Any]:
+    suffix = path.suffix.lower()
+    if suffix in {".md", ".csv", ".json"}:
+        content = path.read_text(encoding="utf-8-sig", errors="replace")
+        return {"content": content[:20000], "truncated": len(content) > 20000, "format": suffix[1:] or "text"}
+    return {"content": "", "truncated": False, "format": suffix[1:] or "binary"}
+
+
+@app.route("/api/settlement-demo/source-files", methods=["GET"])
+def source_files():
+    query = (request.args.get("q") or "").strip().lower()
+    category = (request.args.get("category") or "").strip()
+    limit = min(max(int(request.args.get("limit", 200)), 1), 1000)
+    results: List[Dict[str, Any]] = []
+    seen = set()
+    for root in SOURCE_SEARCH_ROOTS:
+        if not root.exists():
+            continue
+        for path in root.rglob("*"):
+            if not path.is_file() or path.suffix.lower() not in SOURCE_EXTENSIONS:
+                continue
+            key = str(path.resolve()).lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            item_category = _source_category(path)
+            if query and query not in path.name.lower() and query not in str(path.parent).lower():
+                continue
+            if category and item_category != category:
+                continue
+            stat = path.stat()
+            results.append({
+                "name": path.name,
+                "path": str(path),
+                "category": item_category,
+                "extension": path.suffix.lower(),
+                "size": stat.st_size,
+                "modified_at": stat.st_mtime,
+                "readable": True,
+            })
+            if len(results) >= limit:
+                break
+        if len(results) >= limit:
+            break
+    results.sort(key=lambda item: (item["category"], item["name"]))
+    return jsonify({"status": "success", "count": len(results), "roots": [str(root) for root in SOURCE_SEARCH_ROOTS], "files": results})
+
+
+@app.route("/api/settlement-demo/demo-package/generate", methods=["POST"])
+def generate_demo_package_endpoint():
+    """Create an inspectable demo package; importing it remains a separate user action."""
+    result = generate_package()
+    return jsonify({"status": "success", "message": "演示资料包已生成，请在审计准备阶段导入", "package": result})
+
+
+@app.route("/api/settlement-demo/demo-package/download", methods=["GET"])
+def download_demo_package():
+    package_path = BASE_DIR / "_demo_packages" / "中建结算审计演示资料包.zip"
+    if not package_path.exists():
+        return jsonify({"status": "error", "message": "请先生成演示资料包"}), 404
+    return send_file(package_path, as_attachment=True, download_name=package_path.name)
+
+
+@app.route("/")
 def index():
-    """托管前端页面"""
-    return send_from_directory('.', 'settlement_platform.html')
+    return send_from_directory(".", "settlement_platform.html")
 
-@app.route('/<path:path>')
-def static_files(path):
-    """托管其他静态资源"""
-    return send_from_directory('.', path)
 
-# ============================================================================
-# API 路由 - 数据初始化
-# ============================================================================
+@app.route("/<path:path>")
+def static_files(path: str):
+    return send_from_directory(".", path)
 
-@app.route('/api/init', methods=['POST'])
+
+@app.route("/api/init", methods=["POST"])
 def init_data():
-    """初始化示例数据"""
-    try:
-        result = engine.import_sample_data()
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+    return jsonify(engine.import_sample_data())
 
-# ============================================================================
-# API 路由 - 11个核心模型
-# ============================================================================
 
-@app.route('/api/models/1.1/<contract_id>', methods=['GET'])
-def model_1_1(contract_id):
-    """模型1.1: 确权率偏离度"""
-    result = engine.model_1_1_authorization_rate_deviation(contract_id)
-    return jsonify(result)
+@app.route("/api/settlement-demo/state", methods=["GET"])
+def settlement_state():
+    category = _category_from_request()
+    return jsonify(engine.export_state(category))
 
-@app.route('/api/models/1.2/<contract_id>', methods=['GET'])
-def model_1_2(contract_id):
-    """模型1.2: 久竣未结时间型亏损"""
-    result = engine.model_1_2_delay_settlement_time_loss(contract_id)
-    return jsonify(result)
 
-@app.route('/api/models/1.3/<contract_id>', methods=['GET'])
-def model_1_3(contract_id):
-    """模型1.3: 签证滞后/索赔失脱"""
-    result = engine.model_1_3_visa_claim_timeout(contract_id)
-    return jsonify(result)
+@app.route("/api/settlement-demo/organizations", methods=["GET"])
+def organizations():
+    return jsonify({"status": "success", "organization_tree": ORGANIZATION_NODES})
 
-@app.route('/api/models/1.4/<contract_id>', methods=['GET'])
-def model_1_4(contract_id):
-    """模型1.4: 法院判决收入冲销"""
-    result = engine.model_1_4_lawsuit_income_cancellation(contract_id)
-    return jsonify(result)
 
-@app.route('/api/models/2.1/<contract_id>', methods=['GET'])
-def model_2_1(contract_id):
-    """模型2.1: 超合同5%三重一大穿透"""
-    result = engine.model_2_1_exceed_contract_5_percent(contract_id)
-    return jsonify(result)
+@app.route("/api/settlement-demo/compare", methods=["GET"])
+def settlement_compare():
+    category = _category_from_request()
+    return jsonify(engine.compare(category))
 
-@app.route('/api/models/2.2/<contract_id>', methods=['GET'])
-def model_2_2(contract_id):
-    """模型2.2: 包干禁止签证"""
-    result = engine.model_2_2_lumpsum_forbidden_visa(contract_id)
-    return jsonify(result)
 
-@app.route('/api/models/2.3/<contract_id>', methods=['GET'])
-def model_2_3(contract_id):
-    """模型2.3: 材料超耗150%扣款"""
-    result = engine.model_2_3_material_overconsumption_150(contract_id)
-    return jsonify(result)
+@app.route("/api/settlement-demo/apply-deduction", methods=["POST"])
+def apply_deduction():
+    data = _json_body()
+    result = engine.apply_deduction(
+        data.get("item_code", ""),
+        data.get("approved_qty"),
+        data.get("approved_price"),
+        data.get("reason", ""),
+    )
+    return jsonify(result), (200 if result.get("status") == "success" else 400)
 
-@app.route('/api/models/2.4/<contract_id>', methods=['GET'])
-def model_2_4(contract_id):
-    """模型2.4: 未签先进场时序倒置"""
-    result = engine.model_2_4_work_before_sign(contract_id)
-    return jsonify(result)
 
-@app.route('/api/models/2.5/<contract_id>', methods=['GET'])
-def model_2_5(contract_id):
-    """模型2.5: 代工未扣与负结算清收"""
-    result = engine.model_2_5_agent_work_not_deducted(contract_id)
-    return jsonify(result)
+@app.route("/api/settlement-demo/decision", methods=["POST"])
+def decision():
+    data = _json_body()
+    result = engine.review_issue(
+        data.get("issue_id", ""),
+        data.get("decision", ""),
+        data.get("note") or data.get("reasoning", ""),
+        data.get("deduction_amount", 0),
+    )
+    return jsonify(result), (200 if result.get("status") == "success" else 400)
 
-@app.route('/api/models/3.1/<contract_id>', methods=['GET'])
-def model_3_1(contract_id):
-    """模型3.1: 竣工存货未报耗"""
-    result = engine.model_3_1_completion_inventory_unreported(contract_id)
-    return jsonify(result)
 
-@app.route('/api/models/3.2/<contract_id>', methods=['GET'])
-def model_3_2(contract_id):
-    """模型3.2: 隐性贴息利息侵蚀"""
-    result = engine.model_3_2_hidden_interest_erosion(contract_id)
-    return jsonify(result)
+@app.route("/api/settlement-demo/remediation", methods=["POST"])
+def remediation():
+    data = _json_body()
+    issue_id = data.get("issue_id", "")
+    status = data.get("status", "")
+    note = data.get("note", "")
+    proof_number = data.get("proof_number", "")
+    proof_type = data.get("proof_type", "")
 
-@app.route('/api/models/3.3/<contract_id>', methods=['GET'])
-def model_3_3(contract_id):
-    """模型3.3: 招采付款倒挂"""
-    result = engine.model_3_3_procurement_payment_inversion(contract_id)
-    return jsonify(result)
+    if proof_number and status:
+        result = engine.close_issue(issue_id, proof_number, proof_type)
+        return jsonify(result), (200 if result.get("status") == "success" else 400)
 
-# ============================================================================
-# API 路由 - 三表穿透比对
-# ============================================================================
+    if status == "closed":
+        if not proof_number:
+            return jsonify({"status": "error", "message": "proof_number is required"}), 400
+        result = engine.close_issue(issue_id, proof_number, proof_type)
+        return jsonify(result), (200 if result.get("status") == "success" else 400)
 
-@app.route('/api/comparison/<contract_id>', methods=['GET'])
-def three_table_comparison(contract_id):
-    """三表穿透比对"""
-    result = engine.three_table_comparison(contract_id)
-    return jsonify(result)
+    if status in {"已销号", "closed", "close"}:
+        if not proof_number:
+            return jsonify({"status": "error", "message": "销号必须提供凭证编号"}), 400
+        result = engine.close_issue(issue_id, proof_number, proof_type)
+        return jsonify(result), (200 if result.get("status") == "success" else 400)
 
-# ============================================================================
-# API 路由 - 真问题候选包生成
-# ============================================================================
+    if status == "已销号":
+        if not proof_number:
+            return jsonify({"status": "error", "message": "销号必须提供凭证号"}), 400
+        result = engine.close_issue(issue_id, proof_number, proof_type)
+    else:
+        result = engine.review_issue(issue_id, status or "整改中", note, data.get("deduction_amount", 0))
+        if result.get("status") == "success":
+            issue = result["issue"]
+            issue["status"] = status or issue["status"]
+            result["remediation_tasks"] = engine._sync_remediation_tasks()
+    return jsonify(result), (200 if result.get("status") == "success" else 400)
 
-@app.route('/api/issues/generate/<contract_id>', methods=['POST'])
-def generate_issues(contract_id):
-    """第一层：生成真问题候选包"""
-    result = engine.generate_true_issue_package(contract_id)
-    return jsonify(result)
 
-@app.route('/api/issues/list', methods=['GET'])
-def list_issues():
-    """获取疑点清单"""
-    try:
-        org_level = request.args.get('org_level', '')
-        risk_level = request.args.get('risk_level', '')
+@app.route("/api/settlement-demo/knowledge", methods=["POST"])
+def knowledge():
+    data = _json_body()
+    question = data.get("question", "")
+    dify_result = dify.retrieve(question, int(data.get("top_k", 5) or 5))
+    if dify_result.get("status") == "success":
+        payload = dify_result.get("data") or {}
+        records = payload.get("records") or payload.get("data") or []
+        return jsonify({
+            "status": "success",
+            "provider": "dify",
+            "answer": "已从知识库召回相关制度依据，请结合当前疑点进行主审判断。",
+            "source": "Dify 知识库",
+            "records": records,
+            "retrieval": payload,
+        })
+    result = engine.query_knowledge(question, data.get("context_issue_id", ""))
+    return jsonify({"status": "success", "provider": "local", "dify": dify_result, **result})
 
-        query = "SELECT * FROM issues WHERE 1=1"
-        params = []
 
-        if org_level:
-            query += " AND contract_id IN (SELECT contract_id FROM contracts WHERE org_level = ?)"
-            params.append(org_level)
+@app.route("/api/settlement-demo/dify/status", methods=["GET"])
+def dify_status():
+    return jsonify({"status": "success", **dify.status()})
 
-        if risk_level:
-            query += " AND risk_level = ?"
-            params.append(risk_level)
 
-        query += " ORDER BY created_at DESC LIMIT 100"
+@app.route("/api/settlement-demo/source-preview", methods=["GET"])
+def source_preview():
+    name = request.args.get("name", "")
+    path = _find_source_file(name)
+    if not path:
+        return jsonify({"status": "error", "message": "未找到原始资料"}), 404
+    payload = _read_source_file(path)
+    return jsonify({
+        "status": "success",
+        "name": path.name,
+        "category": _source_category(path),
+        "path": str(path),
+        **payload,
+    })
 
-        results = engine.conn.execute(query, params).fetchall()
 
-        issues = []
-        for row in results:
-            issues.append({
-                "issue_id": row[0],
-                "contract_id": row[1],
-                "chain_type": row[2],
-                "model_code": row[3],
-                "risk_level": row[4],
-                "time_phase": row[5],
-                "issue_type": row[6],
-                "title": row[7],
-                "description": row[8],
-                "amount_impact": float(row[9]) if row[9] else 0,
-                "status": row[11],
-                "created_at": str(row[14])
-            })
+@app.route("/api/settlement-demo/history-reports", methods=["GET"])
+def history_reports():
+    keyword = request.args.get("keyword", "").strip().lower()
+    matches: List[Dict[str, Any]] = []
+    for root in SOURCE_SEARCH_ROOTS:
+        if not root.exists():
+            continue
+        for path in root.rglob("*"):
+            if not path.is_file() or path.suffix.lower() not in SOURCE_EXTENSIONS:
+                continue
+            label = path.name.lower()
+            if not any(token in label for token in ("历史", "报告", "审计")):
+                continue
+            if keyword and keyword not in label:
+                continue
+            matches.append({"name": path.name, "path": str(path), "category": _source_category(path)})
+    unique = {item["path"]: item for item in matches}
+    return jsonify({"status": "success", "reports": list(unique.values())[:100]})
 
-        return jsonify({"status": "success", "issues": issues})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
 
-# ============================================================================
-# API 路由 - 专家会审
-# ============================================================================
+@app.route("/api/settlement-demo/expert-opinion", methods=["POST"])
+def expert_opinion():
+    data = _json_body()
+    result = engine.save_expert_opinion(
+        data.get("issue_id", ""),
+        data.get("expert_role", "审计专家"),
+        data.get("opinion", ""),
+    )
+    return jsonify(result), (200 if result.get("status") == "success" else 400)
 
-@app.route('/api/experts/discuss', methods=['POST'])
-def expert_discussion():
-    """第二层：专家圆桌讨论"""
-    data = request.json
-    issue_id = data.get('issue_id')
-    user_question = data.get('question', '')
 
-    # 模拟专家讨论结果（实际应调用Dify RAG）
-    expert_opinions = {
-        "commercial_expert": "从商务角度看，该事项违反了合同包干条款，建议全额审减。",
-        "legal_expert": "法律风险中等，建议补充相关证据链，避免后续争议。",
-        "financial_expert": "财务影响约50万元，建议启动整改并锁定后续付款。",
-        "construction_expert": "现场实际情况可能存在特殊原因，建议现场核实后再做裁决。"
+@app.route("/api/settlement-demo/issue-analysis/<issue_id>", methods=["GET"])
+def issue_analysis(issue_id: str):
+    issue = engine.issue_index.get(issue_id)
+    if not issue:
+        return jsonify({"status": "error", "message": "未找到疑点"}), 404
+    return jsonify(
+        {
+            "status": "success",
+            "analysis": issue,
+            "screening": {"keep_for_chief_review": issue["risk_level"] == "高危"},
+            "conference": {"mode": "专家圆桌" if issue["risk_level"] == "高危" else "统一互动讨论"},
+            "knowledge_prompt": f"{issue['title']} 的制度依据是什么？",
+            "question_slots": ["依据", "证据", "口径", "建议"],
+        }
+    )
+
+
+@app.route("/api/settlement-demo/model", methods=["GET"])
+def model():
+    return jsonify({"status": "success", **engine.structured_model})
+
+
+@app.route("/api/settlement-demo/model-chain", methods=["GET"])
+def model_chain():
+    return jsonify({"status": "success", **engine.model_chain})
+
+
+@app.route("/api/settlement-demo/nine-grid", methods=["GET"])
+def nine_grid():
+    return jsonify({"status": "success", **engine.point_line_surface})
+
+
+@app.route("/api/settlement-demo/cross-model-hints", methods=["GET"])
+def cross_model_hints():
+    return jsonify({"status": "success", **engine.cross_model_hints})
+
+
+@app.route("/api/settlement-demo/model-catalog", methods=["GET"])
+def model_catalog():
+    return jsonify(
+        {
+            "status": "success",
+            "audit_model_catalog": engine.audit_model_catalog,
+            "false_settlement_training": engine.false_settlement_training,
+            "model_chain": engine.model_chain,
+            "nine_grid": engine.point_line_surface,
+            "cross_model_hints": engine.cross_model_hints,
+        }
+    )
+
+
+@app.route("/api/settlement-demo/model/<model_id>/run", methods=["POST"])
+def run_model(model_id: str):
+    result = engine.run_model(model_id)
+    return jsonify(result), (200 if result.get("status") == "success" else 400)
+
+
+@app.route("/api/settlement-demo/robot/configure", methods=["POST"])
+def configure_robot():
+    data = _json_body()
+    result = engine.configure_robot(data.get("task_name", ""), data.get("schedule", ""), data.get("source", ""))
+    return jsonify(result), (200 if result.get("status") == "success" else 400)
+
+
+@app.route("/api/settlement-demo/robot/run", methods=["POST"])
+def run_robot():
+    data = _json_body()
+    result = engine.run_robot(data.get("task_name", ""), data.get("rows") or [], data.get("source", "业务系统"))
+    return jsonify(result), (200 if result.get("status") == "success" else 400)
+
+
+@app.route("/api/settlement-demo/workflow", methods=["GET"])
+def workflow():
+    state = engine.export_state(_category_from_request())
+    return jsonify({"status": "success", "workflow": state["workflow"], "preparation": state["preparation"], "model_runs": state["model_runs"]})
+
+
+@app.route("/api/settlement-demo/relations", methods=["GET"])
+def relations():
+    state = engine.export_state(_category_from_request())
+    return jsonify({"status": "success", "relation_chains": state["relation_chains"]})
+
+
+@app.route("/api/settlement-demo/decision-analysis", methods=["GET"])
+def decision_analysis():
+    state = engine.export_state(_category_from_request())
+    return jsonify({"status": "success", "decision_analysis": state["decision_analysis"]})
+
+
+@app.route("/api/settlement-demo/analysis-snapshot", methods=["GET"])
+def analysis_snapshot():
+    return jsonify(engine.analysis_snapshot())
+
+
+@app.route("/api/settlement-demo/scope", methods=["POST"])
+def scope():
+    data = _json_body()
+    return jsonify(engine.set_scope(data.get("selected_org_codes"), data.get("selected_project_ids")))
+
+
+@app.route("/api/settlement-demo/scope/options", methods=["GET"])
+def scope_options():
+    return jsonify({"status": "success", **engine.scope_options()})
+
+
+@app.route("/api/settlement-demo/audit-task", methods=["POST"])
+def create_audit_task():
+    data = _json_body()
+    result = engine.create_audit_task(
+        data.get("org_code", ""),
+        data.get("project_id", ""),
+        data.get("contract_ids") or [],
+        data.get("owner", "主审"),
+    )
+    return jsonify(result), (200 if result.get("status") == "success" else 400)
+
+
+@app.route("/api/settlement-demo/models/run-all", methods=["POST"])
+def run_all_models():
+    return jsonify(engine.run_all_models())
+
+
+@app.route("/api/settlement-demo/model-rules", methods=["GET"])
+def model_rules():
+    return jsonify(engine.model_rules(request.args.get("model_id", "")))
+
+
+@app.route("/api/settlement-demo/model-rules", methods=["POST"])
+def save_model_rules():
+    data = _json_body()
+    result = engine.save_model_rules(
+        data.get("model_id", ""),
+        data.get("thresholds") or {},
+        data.get("operator", "主审"),
+    )
+    return jsonify(result), (200 if result.get("status") == "success" else 400)
+
+
+@app.route("/api/settlement-demo/data-quality/confirm", methods=["POST"])
+def confirm_data_quality():
+    data = _json_body()
+    return jsonify(engine.confirm_data_quality(data.get("operator", "主审")))
+
+
+@app.route("/api/settlement-demo/system-capture", methods=["POST"])
+def system_capture():
+    data = _json_body()
+    rows = data.get("rows") or []
+    if not isinstance(rows, list):
+        return jsonify({"status": "error", "message": "系统抓数必须是数组"}), 400
+    meta = engine.raw_data.setdefault("meta", {})
+    layers = meta.setdefault("data_layers", {})
+    layers["system_capture"] = {
+        "label": "系统抓数",
+        "status": "已接入待校验",
+        "records": len(rows),
+        "source": data.get("source", "RPA/业务系统"),
+        "rows": rows,
     }
+    engine._rebuild()
+    return jsonify({"status": "success", "message": "系统抓数已进入来源层，等待与文档和宽表交叉验证", "state": engine.export_state()})
 
-    return jsonify({
-        "status": "success",
-        "issue_id": issue_id,
-        "expert_opinions": expert_opinions,
-        "consensus": "建议审减60%，剩余40%待现场核实后确定",
-        "timestamp": datetime.now().isoformat()
-    })
 
-# ============================================================================
-# API 路由 - 主审公文复核
-# ============================================================================
+@app.route("/api/settlement-demo/report", methods=["GET", "POST"])
+def report():
+    data = _json_body() if request.method == "POST" else {}
+    if request.method == "POST" and "draft" in data:
+        result = engine.save_report_draft(data.get("draft", ""), data.get("author", "主审"))
+        return jsonify(result), (200 if result.get("status") == "success" else 400)
+    return jsonify({"status": "success", "report": engine.generate_report()})
 
-@app.route('/api/review/decision', methods=['POST'])
-def reviewer_decision():
-    """第三层：主审裁决"""
-    data = request.json
-    issue_id = data.get('issue_id')
-    decision = data.get('decision')  # 认定/不认定/需补充证据
-    reasoning = data.get('reasoning', '')
-    deduction_amount = data.get('deduction_amount', 0)
 
-    try:
-        # 更新疑点状态
-        engine.conn.execute("""
-            UPDATE issues
-            SET reviewer_decision = ?,
-                status = ?,
-                amount_impact = ?
-            WHERE issue_id = ?
-        """, [
-            json.dumps({"decision": decision, "reasoning": reasoning}, ensure_ascii=False),
-            '整改中' if decision == '认定' else '已关闭',
-            deduction_amount,
-            issue_id
-        ])
-
-        return jsonify({
-            "status": "success",
-            "message": "主审裁决已记录",
-            "issue_id": issue_id,
-            "decision": decision
-        })
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
-
-# ============================================================================
-# API 路由 - 整改销号
-# ============================================================================
-
-@app.route('/api/remediation/close', methods=['POST'])
-def close_remediation():
-    """第四层：整改销号（强制凭证卡口）"""
-    data = request.json
-    issue_id = data.get('issue_id')
-    proof_number = data.get('proof_number', '')  # 凭证号
-    proof_type = data.get('proof_type', '')      # 冲账凭证/退款水单
-
-    if not proof_number:
-        return jsonify({
-            "status": "error",
-            "message": "销号必须提供凭证号，严禁无凭证销号"
-        }), 400
-
-    try:
-        engine.conn.execute("""
-            UPDATE issues
-            SET status = '已销号',
-                remediation_proof = ?,
-                closed_at = CURRENT_TIMESTAMP
-            WHERE issue_id = ?
-        """, [
-            json.dumps({"proof_number": proof_number, "proof_type": proof_type}, ensure_ascii=False),
-            issue_id
-        ])
-
-        return jsonify({
-            "status": "success",
-            "message": "整改已销号，财务支付锁已解除",
-            "issue_id": issue_id,
-            "proof_number": proof_number
-        })
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
-
-# ============================================================================
-# API 路由 - 知识库问答（RAG）
-# ============================================================================
-
-@app.route('/api/knowledge/query', methods=['POST'])
-def knowledge_query():
-    """统一互动讨论层：制度法规问答"""
-    data = request.json
-    question = data.get('question', '')
-    context_issue_id = data.get('context_issue_id', '')
-
-    # 模拟RAG问答结果（实际应调用Dify RAG）
-    answer = f"根据《建设工程施工合同示范文本》第13.2条，{question}的情况下，承包人应在事件发生后14天内提交书面签证申请..."
-
-    related_clauses = [
-        {"clause": "GB50500-2013 第3.2.1条", "content": "包干合同不得调整合同价款..."},
-        {"clause": "建市[2019]51号文", "content": "竣工结算应在竣工验收后60天内完成..."}
-    ]
-
-    return jsonify({
-        "status": "success",
-        "question": question,
-        "answer": answer,
-        "related_clauses": related_clauses,
-        "timestamp": datetime.now().isoformat()
-    })
-
-# ============================================================================
-# API 路由 - 统计看板数据
-# ============================================================================
-
-@app.route('/api/dashboard/stats', methods=['GET'])
-def dashboard_stats():
-    """主审驾驶舱统计数据"""
-    try:
-        # 获取筛选参数
-        org_level = request.args.get('org_level', '')
-
-        # 统计疑点数量
-        stats = engine.conn.execute("""
-            SELECT
-                COUNT(*) as total_issues,
-                SUM(CASE WHEN risk_level = '高危' THEN 1 ELSE 0 END) as high_risk,
-                SUM(CASE WHEN risk_level = '中等' THEN 1 ELSE 0 END) as medium_risk,
-                SUM(CASE WHEN status = '待主审复核' THEN 1 ELSE 0 END) as pending_review,
-                SUM(CASE WHEN status = '整改中' THEN 1 ELSE 0 END) as in_remediation,
-                SUM(CASE WHEN status = '已销号' THEN 1 ELSE 0 END) as closed,
-                SUM(amount_impact) as total_amount_impact
-            FROM issues
-        """).fetchone()
-
-        # 九大定论链分布
-        chain_stats = engine.conn.execute("""
-            SELECT
-                chain_type,
-                COUNT(*) as count,
-                SUM(amount_impact) as total_impact
-            FROM issues
-            GROUP BY chain_type
-        """).fetchall()
-
-        chains = {}
-        for row in chain_stats:
-            chains[row[0]] = {"count": row[1], "total_impact": float(row[2]) if row[2] else 0}
-
-        return jsonify({
-            "status": "success",
-            "total_issues": stats[0] if stats else 0,
-            "high_risk_count": stats[1] if stats else 0,
-            "medium_risk_count": stats[2] if stats else 0,
-            "pending_review": stats[3] if stats else 0,
-            "in_remediation": stats[4] if stats else 0,
-            "closed": stats[5] if stats else 0,
-            "total_amount_impact": float(stats[6]) if stats and stats[6] else 0,
-            "chain_distribution": chains
-        })
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
-
-# ============================================================================
-# API 路由 - 合同列表
-# ============================================================================
-
-@app.route('/api/contracts/list', methods=['GET'])
-def list_contracts():
-    """获取合同列表"""
-    try:
-        results = engine.conn.execute("""
-            SELECT
-                contract_id,
-                org_level,
-                org_name,
-                project_name,
-                owner_name,
-                contract_amount,
-                contract_date,
-                completion_date,
-                contract_type
-            FROM contracts
-            ORDER BY contract_date DESC
-        """).fetchall()
-
-        contracts = []
-        for row in results:
-            contracts.append({
-                "contract_id": row[0],
-                "org_level": row[1],
-                "org_name": row[2],
-                "project_name": row[3],
-                "owner_name": row[4],
-                "contract_amount": float(row[5]),
-                "contract_date": str(row[6]),
-                "completion_date": str(row[7]) if row[7] else None,
-                "contract_type": row[8]
-            })
-
-        return jsonify({"status": "success", "contracts": contracts})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
-
-# ============================================================================
-# API 路由 - 报告生成
-# ============================================================================
-
-@app.route('/api/report/generate', methods=['POST'])
-def generate_report():
-    """生成审计报告"""
-    data = request.json
-    contract_id = data.get('contract_id')
-    report_type = data.get('report_type', 'full')  # full/summary/executive
-
-    # 获取该合同的所有疑点
-    issues = engine.conn.execute("""
-        SELECT * FROM issues WHERE contract_id = ? ORDER BY risk_level DESC, amount_impact DESC
-    """, [contract_id]).fetchall()
-
-    # 生成报告摘要
-    report = {
-        "report_id": str(uuid.uuid4()),
-        "contract_id": contract_id,
-        "report_type": report_type,
-        "generated_at": datetime.now().isoformat(),
-        "summary": {
-            "total_issues": len(issues),
-            "high_risk_count": sum(1 for i in issues if i[4] == '高危'),
-            "total_deduction": sum(float(i[9]) for i in issues if i[9])
-        },
-        "recommendations": [
-            "建议立即启动整改程序，锁定后续付款",
-            "对高危疑点进行专家会审，确保裁决公正性",
-            "完善证据链管理，避免类似问题再次发生"
+@app.route("/api/settlement-demo/export", methods=["GET"])
+def export():
+    fmt = request.args.get("format", "json").lower()
+    state = engine.export_state(_category_from_request())
+    if fmt == "csv":
+        rows = ["编号,名称,单位,数量差,价差,审减金额"]
+        for item in state["items"]:
+            rows.append(
+                ",".join(
+                    [
+                        item["item_code"],
+                        item["name"],
+                        item["unit"],
+                        str(item["qty_diff_vs_actual"]),
+                        str(item["price_deviation_contract"]),
+                        str(item["amount_deducted"]),
+                    ]
+                )
+            )
+        return app.response_class("\n".join(rows), mimetype="text/csv")
+    if fmt == "md":
+        text = [
+            "# 工程结算审计报告初稿",
+            "",
+            f"- 审减金额: {state['summary']['sum_deducted']}",
+            f"- 支付超前敞口: {state['summary']['payment_gap']}",
+            f"- 疑点数量: {state['summary']['issue_count']}",
         ]
-    }
+        return app.response_class("\n".join(text), mimetype="text/markdown")
+    return jsonify(state)
 
-    return jsonify({"status": "success", "report": report})
 
-# ============================================================================
-# 错误处理
-# ============================================================================
+@app.route("/api/settlement-demo/upload", methods=["POST"])
+def upload():
+    files = request.files.getlist("files")
+    if not files:
+        return jsonify({"status": "error", "message": "未收到文件"}), 400
+    dataset = _build_uploaded_dataset(files)
+    engine.load_dataset(dataset)
+    payload = engine.export_state()
+    payload.update(
+        {
+            "upload_activated": True,
+            "active_data_source": "上传表格资料包",
+            "uploaded_now": [{"fields": {"file_count": len(files)}}],
+        }
+    )
+    return jsonify(payload)
+
+
+@app.route("/api/settlement-demo/reset", methods=["POST"])
+def reset():
+    return jsonify(engine.import_sample_data())
+
+
+@app.route("/api/comparison/<contract_id>", methods=["GET"])
+def legacy_comparison(contract_id: str):
+    return jsonify(engine.three_table_comparison(contract_id))
+
+
+@app.route("/api/issues/generate/<contract_id>", methods=["POST"])
+def legacy_issue_generate(contract_id: str):
+    return jsonify(engine.generate_true_issue_package(contract_id))
+
+
+@app.route("/api/issues/list", methods=["GET"])
+def legacy_issue_list():
+    return jsonify({"status": "success", "issues": engine.issues})
+
+
+@app.route("/api/contracts/list", methods=["GET"])
+def contracts_list():
+    project = engine.raw_data.get("project", {})
+    return jsonify(
+        {
+            "status": "success",
+            "contracts": [
+                {
+                    "contract_id": project.get("id", "NF-026"),
+                    "org_level": "项目",
+                    "org_name": project.get("owner", ""),
+                    "project_name": project.get("name", ""),
+                    "owner_name": project.get("contractor", ""),
+                    "contract_amount": engine.summary.get("sum_declared", 0),
+                    "contract_date": project.get("sign_date", ""),
+                    "completion_date": project.get("acceptance_date", ""),
+                    "contract_type": "总包",
+                }
+            ],
+        }
+    )
+
+
+@app.route("/api/dashboard/stats", methods=["GET"])
+def dashboard_stats():
+    return jsonify(
+        {
+            "status": "success",
+            "total_issues": engine.summary.get("issue_count", 0),
+            "high_risk_count": engine.summary.get("high_risk_count", 0),
+            "medium_risk_count": engine.summary.get("medium_risk_count", 0),
+            "pending_review": sum(1 for issue in engine.issues if issue["status"] == "待主审复核"),
+            "in_remediation": sum(1 for issue in engine.issues if issue["status"] == "整改中"),
+            "closed": sum(1 for issue in engine.issues if issue["status"] == "已销号"),
+            "total_amount_impact": engine.summary.get("risk_amount", 0),
+            "chain_distribution": {chain["chain_type"]: chain["count"] for chain in []},
+        }
+    )
+
+
+@app.route("/api/report/generate", methods=["POST"])
+def generate_report():
+    data = _json_body()
+    return jsonify({"status": "success", "report": engine.generate_report(data.get("contract_id"), data.get("report_type", "full"))})
+
+
+@app.route("/api/models/1.1/<contract_id>", methods=["GET"])
+def model_1_1(contract_id: str):
+    return jsonify({"status": "success", "contract_id": contract_id, "model_code": "1.1"})
+
+
+@app.route("/api/models/1.2/<contract_id>", methods=["GET"])
+def model_1_2(contract_id: str):
+    return jsonify({"status": "success", "contract_id": contract_id, "model_code": "1.2"})
+
+
+@app.route("/api/models/1.3/<contract_id>", methods=["GET"])
+def model_1_3(contract_id: str):
+    return jsonify({"status": "success", "contract_id": contract_id, "model_code": "1.3"})
+
+
+@app.route("/api/models/1.4/<contract_id>", methods=["GET"])
+def model_1_4(contract_id: str):
+    return jsonify({"status": "success", "contract_id": contract_id, "model_code": "1.4"})
+
+
+@app.route("/api/models/2.1/<contract_id>", methods=["GET"])
+def model_2_1(contract_id: str):
+    return jsonify({"status": "success", "contract_id": contract_id, "model_code": "2.1"})
+
+
+@app.route("/api/models/2.2/<contract_id>", methods=["GET"])
+def model_2_2(contract_id: str):
+    return jsonify({"status": "success", "contract_id": contract_id, "model_code": "2.2"})
+
+
+@app.route("/api/models/2.3/<contract_id>", methods=["GET"])
+def model_2_3(contract_id: str):
+    return jsonify({"status": "success", "contract_id": contract_id, "model_code": "2.3"})
+
+
+@app.route("/api/models/2.4/<contract_id>", methods=["GET"])
+def model_2_4(contract_id: str):
+    return jsonify({"status": "success", "contract_id": contract_id, "model_code": "2.4"})
+
+
+@app.route("/api/models/2.5/<contract_id>", methods=["GET"])
+def model_2_5(contract_id: str):
+    return jsonify({"status": "success", "contract_id": contract_id, "model_code": "2.5"})
+
+
+@app.route("/api/models/3.1/<contract_id>", methods=["GET"])
+def model_3_1(contract_id: str):
+    return jsonify({"status": "success", "contract_id": contract_id, "model_code": "3.1"})
+
+
+@app.route("/api/models/3.2/<contract_id>", methods=["GET"])
+def model_3_2(contract_id: str):
+    return jsonify({"status": "success", "contract_id": contract_id, "model_code": "3.2"})
+
+
+@app.route("/api/models/3.3/<contract_id>", methods=["GET"])
+def model_3_3(contract_id: str):
+    return jsonify({"status": "success", "contract_id": contract_id, "model_code": "3.3"})
+
 
 @app.errorhandler(404)
 def not_found(e):
     return jsonify({"status": "error", "message": "API endpoint not found"}), 404
 
+
 @app.errorhandler(500)
 def internal_error(e):
     return jsonify({"status": "error", "message": "Internal server error"}), 500
 
-# ============================================================================
-# 启动服务
-# ============================================================================
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print("=" * 80)
-    print("结算审核智能体 Web服务启动中...")
-    print("访问地址: http://localhost:5100")
+    print("Settlement audit web service starting on http://127.0.0.1:5100")
     print("=" * 80)
-
-    # 初始化示例数据
-    engine.import_sample_data()
-    print("[✓] 示例数据已加载")
-
-    app.run(host='0.0.0.0', port=5100, debug=True)
+    app.run(host="0.0.0.0", port=5100, debug=True)

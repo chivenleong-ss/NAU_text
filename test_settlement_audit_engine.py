@@ -159,6 +159,21 @@ class SettlementAuditEngineTests(unittest.TestCase):
             payload = response.get_json()
         self.assertEqual(payload["audit_model_catalog"]["summary"]["model_count"], 13)
         self.assertEqual(payload["false_settlement_training"]["sample_count"], 6)
+        self.assertIn("model_chain", payload)
+        self.assertIn("nine_grid", payload)
+        self.assertIn("cross_model_hints", payload)
+
+    def test_new_model_overview_endpoints_are_exposed(self):
+        with app.test_client() as client:
+            model_chain = client.get("/api/settlement-demo/model-chain")
+            nine_grid = client.get("/api/settlement-demo/nine-grid")
+            hints = client.get("/api/settlement-demo/cross-model-hints")
+        self.assertEqual(model_chain.status_code, 200)
+        self.assertEqual(nine_grid.status_code, 200)
+        self.assertEqual(hints.status_code, 200)
+        self.assertEqual(model_chain.get_json()["steps"][5]["name"], "九大管理归因与战略定论链串联")
+        self.assertEqual(nine_grid.get_json()["metrics"]["surface_count"], 9)
+        self.assertEqual(hints.get_json()["total_chains"], 9)
 
     def test_export_endpoint_returns_audit_snapshot(self):
         with app.test_client() as client:
